@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ClipboardList } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewHistoryItem, PaginatedData } from "@/lib/types";
@@ -42,7 +43,7 @@ function HistoryContent() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <p className="text-4xl">📋</p>
+          <ClipboardList className="w-12 h-12 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground">还没有面试记录</p>
           <Link
             href="/interview/setup"

@@ -73,6 +73,13 @@ async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_d
 @router.get("/me")
 async def get_me(auth: tuple = Depends(get_current_user)):
     user, new_token = auth
+
+    # 获取配额
+    from api.quota import ensure_quota_initialized, _quota_key
+    from db.redis import redis_client
+    await ensure_quota_initialized(user)
+    remaining = int(await redis_client.get(_quota_key(user.id)) or 0)
+
     data = {
         "uuid": user.uuid,
         "nickname": user.nickname,
@@ -80,6 +87,7 @@ async def get_me(auth: tuple = Depends(get_current_user)):
         "phone": user.phone,
         "membership_type": user.membership_type,
         "membership_expire_at": user.membership_expire_at.isoformat() if user.membership_expire_at else None,
+        "quota_remaining": remaining,
         "total_interviews": user.total_interviews,
         "created_at": user.created_at.isoformat(),
     }

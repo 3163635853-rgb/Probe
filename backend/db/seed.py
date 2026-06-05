@@ -64,6 +64,34 @@ POSITIONS = {
         {"name": "技术美术", "category": "design", "level": "mid", "default_difficulty": 3},
         {"name": "游戏运营", "category": "operation", "level": "mid", "default_difficulty": 2},
     ],
+    "制造": [
+        {"name": "工业软件工程师", "category": "tech", "level": "mid", "default_difficulty": 3},
+        {"name": "自动化工程师", "category": "tech", "level": "mid", "default_difficulty": 3},
+        {"name": "供应链经理", "category": "management", "level": "senior", "default_difficulty": 3},
+        {"name": "质量工程师", "category": "tech", "level": "mid", "default_difficulty": 2},
+        {"name": "生产主管", "category": "management", "level": "mid", "default_difficulty": 3},
+    ],
+    "房地产": [
+        {"name": "投资分析师", "category": "operation", "level": "mid", "default_difficulty": 3},
+        {"name": "项目经理", "category": "management", "level": "senior", "default_difficulty": 3},
+        {"name": "营销总监", "category": "sales", "level": "senior", "default_difficulty": 4},
+        {"name": "设计师", "category": "design", "level": "mid", "default_difficulty": 2},
+        {"name": "成本管理", "category": "operation", "level": "mid", "default_difficulty": 3},
+    ],
+    "咨询": [
+        {"name": "咨询顾问", "category": "operation", "level": "mid", "default_difficulty": 4},
+        {"name": "高级分析师", "category": "tech", "level": "mid", "default_difficulty": 4},
+        {"name": "项目经理", "category": "management", "level": "senior", "default_difficulty": 4},
+        {"name": "行业研究员", "category": "operation", "level": "junior", "default_difficulty": 3},
+        {"name": "合伙人助理", "category": "operation", "level": "junior", "default_difficulty": 3},
+    ],
+    "新能源": [
+        {"name": "电池研发工程师", "category": "tech", "level": "mid", "default_difficulty": 4},
+        {"name": "嵌入式工程师", "category": "tech", "level": "mid", "default_difficulty": 3},
+        {"name": "产品经理", "category": "product", "level": "mid", "default_difficulty": 3},
+        {"name": "项目经理", "category": "management", "level": "senior", "default_difficulty": 3},
+        {"name": "市场BD", "category": "sales", "level": "mid", "default_difficulty": 2},
+    ],
 }
 
 MODES = [

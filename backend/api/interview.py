@@ -310,6 +310,7 @@ async def get_active(auth: tuple = Depends(get_current_user)):
             "session_uuid": session_uuid,
             "state": state_data.get("state", "IDLE"),
             "round": int(state_data.get("round", "0")),
+            "started_at": state_data.get("started_at"),
             "stream_url": f"/api/interview/{session_uuid}/stream",
         },
     }

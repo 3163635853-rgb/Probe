@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+from datetime import datetime, timezone
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -173,6 +174,13 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         answer = await _wait_for_answer(session_uuid)
         if answer == "__END__":
             break
+        if answer == "__REMINDER__":
+            seq += 1
+            yield await _push_event(session_uuid, seq, "reminder", {"message": "还在吗？如果需要更多时间思考，请继续作答"})
+            # 继续等到真正超时
+            answer = await _wait_for_answer(session_uuid, timeout=600)
+            if answer in ("__END__", "__REMINDER__"):
+                break
 
         skipped = answer == "__SKIP__"
         answer_text = "" if skipped else answer
@@ -294,7 +302,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             sess.status = "completed"
             sess.report_json = report_data
             sess.final_score = report_data.get("overall_score", 0)
-            sess.ended_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+            sess.ended_at = datetime.now(timezone.utc)
             if sess.started_at:
                 sess.duration_sec = int((sess.ended_at - sess.started_at).total_seconds())
             await db.commit()
@@ -368,12 +376,28 @@ JD参考: {jd_text[:200] if jd_text else '无'}
 
 
 async def _wait_for_answer(session_uuid: str, timeout: int = 900) -> str:
-    """轮询等待用户回答，timeout=15min"""
+    """轮询等待用户回答，timeout=15min，带心跳和 reminder"""
     key = f"answer:{session_uuid}"
     start = time.time()
+    last_ping = time.time()
+    reminder_sent = False
+
     while time.time() - start < timeout:
         answer = await redis_client.getdel(key)
         if answer:
             return answer
+
+        elapsed = time.time() - start
+
+        # 15s 心跳
+        if time.time() - last_ping >= HEARTBEAT_INTERVAL:
+            await redis_client.rpush(f"sse_log:{session_uuid}", f"0|ping|")
+            last_ping = time.time()
+
+        # 5min idle → reminder
+        if not reminder_sent and elapsed >= IDLE_TIMEOUT:
+            reminder_sent = True
+            return "__REMINDER__"
+
         await asyncio.sleep(1)
     return "__END__"  # 超时自动结束

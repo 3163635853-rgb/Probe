@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from config import settings
+from utils.logging import setup_logging
 from db.mysql import engine
 from db.redis import redis_client
 from api.auth import router as auth_router
@@ -11,6 +13,8 @@ from api.interview import router as interview_router
 from api.interview_stream import router as interview_stream_router
 from api.feedback import router as feedback_router
 from middleware.rate_limit import RateLimitMiddleware
+
+setup_logging(debug=settings.DEBUG)
 
 
 @asynccontextmanager
@@ -41,7 +45,7 @@ async def health():
     redis_ok = True
     try:
         async with engine.connect() as conn:
-            await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
+            await conn.execute(text("SELECT 1"))
     except Exception:
         mysql_ok = False
     try:

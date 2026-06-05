@@ -258,7 +258,7 @@ function SetupFlow() {
               disabled={loading || (quota !== null && !quota.can_start_interview)}
               className="mt-6 w-full rounded-full bg-primary py-3 text-white font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
-              {loading ? "创建中..." : "开始面试 🎤"}
+              {loading ? "创建中..." : "开始面试"}
             </button>
             {error && <p className="mt-3 text-sm text-destructive text-center">{error}</p>}
           </StepCard>

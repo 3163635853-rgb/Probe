@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { CheckCircle, TrendingUp, Lightbulb, XCircle } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewReport } from "@/lib/types";
@@ -108,7 +109,9 @@ function ReportContent() {
           <p className="text-sm leading-relaxed">{report.summary}</p>
           {report.strengths.length > 0 && (
             <div>
-              <h3 className="font-medium text-success mb-2">✓ 优势</h3>
+              <h3 className="font-medium text-success mb-2 flex items-center gap-1.5">
+                <CheckCircle className="w-4 h-4" /> 优势
+              </h3>
               <ul className="space-y-1 text-sm">
                 {report.strengths.map((s, i) => <li key={i}>· {s}</li>)}
               </ul>
@@ -116,7 +119,9 @@ function ReportContent() {
           )}
           {report.improvements.length > 0 && (
             <div>
-              <h3 className="font-medium text-primary mb-2">↑ 改进建议</h3>
+              <h3 className="font-medium text-primary mb-2 flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4" /> 改进建议
+              </h3>
               <ul className="space-y-1 text-sm">
                 {report.improvements.map((s, i) => <li key={i}>· {s}</li>)}
               </ul>
@@ -145,12 +150,20 @@ function ReportContent() {
                 <div>
                   <p className="text-muted-foreground mb-1">AI 点评</p>
                   {r.evaluation.strengths.length > 0 && (
-                    <p className="text-success">✓ {r.evaluation.strengths.join("；")}</p>
+                    <p className="text-success flex items-center gap-1">
+                      <CheckCircle className="w-3.5 h-3.5 shrink-0" /> {r.evaluation.strengths.join("；")}
+                    </p>
                   )}
                   {r.evaluation.weaknesses.length > 0 && (
-                    <p className="text-destructive">✗ {r.evaluation.weaknesses.join("；")}</p>
+                    <p className="text-destructive flex items-center gap-1">
+                      <XCircle className="w-3.5 h-3.5 shrink-0" /> {r.evaluation.weaknesses.join("；")}
+                    </p>
                   )}
-                  {r.evaluation.suggestion && <p className="mt-1">💡 {r.evaluation.suggestion}</p>}
+                  {r.evaluation.suggestion && (
+                    <p className="mt-1 flex items-center gap-1">
+                      <Lightbulb className="w-3.5 h-3.5 shrink-0 text-primary" /> {r.evaluation.suggestion}
+                    </p>
+                  )}
                 </div>
               </div>
             </details>

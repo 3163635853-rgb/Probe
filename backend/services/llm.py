@@ -1,9 +1,11 @@
 import asyncio
 import json
-import time
+import logging
 from typing import AsyncGenerator
 from openai import AsyncOpenAI
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 client = AsyncOpenAI(
     api_key=settings.DEEPSEEK_API_KEY or "sk-placeholder",
@@ -15,6 +17,21 @@ client = AsyncOpenAI(
 CHAT_PARAMS = {"model": "deepseek-chat", "temperature": 0.7, "max_tokens": 1024}
 EVAL_PARAMS = {"model": "deepseek-chat", "temperature": 0.2, "max_tokens": 512}
 PLAN_PARAMS = {"model": "deepseek-chat", "temperature": 0.3, "max_tokens": 1024, "response_format": {"type": "json_object"}}
+
+# Token 计数（进程级累计）
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_calls": 0}
+
+
+def get_token_usage() -> dict:
+    return _token_usage.copy()
+
+
+def _record_usage(response):
+    if hasattr(response, "usage") and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_calls"] += 1
+        logger.debug(f"LLM tokens: +{response.usage.prompt_tokens}p/{response.usage.completion_tokens}c")
 
 
 async def stream_chat(messages: list[dict], params: dict | None = None) -> AsyncGenerator[str, None]:
@@ -29,6 +46,7 @@ async def stream_chat(messages: list[dict], params: dict | None = None) -> Async
                 delta = chunk.choices[0].delta
                 if delta.content:
                     yield delta.content
+            _token_usage["total_calls"] += 1
             return
         except Exception:
             if attempt == 0:
@@ -46,6 +64,7 @@ async def chat(messages: list[dict], params: dict | None = None) -> str:
             response = await client.chat.completions.create(
                 messages=messages, stream=False, **p
             )
+            _record_usage(response)
             return response.choices[0].message.content or ""
         except Exception:
             if attempt == 0:
@@ -58,10 +77,8 @@ async def chat_json(messages: list[dict], params: dict | None = None) -> dict:
     """强制 JSON 输出，返回解析后的 dict"""
     p = {**PLAN_PARAMS, **(params or {})}
     text = await chat(messages, p)
-    # 尝试解析 JSON
     text = text.strip()
     if text.startswith("```"):
-        # Strip markdown code fence
         lines = text.split("\n")
         text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
     return json.loads(text)

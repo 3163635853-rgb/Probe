@@ -18,4 +18,5 @@ dependencies = [
     "python-multipart>=0.0.12",
     "faiss-cpu>=1.14.2",
     "numpy>=2.4.6",
+    "structlog>=25.5.0",
 ]

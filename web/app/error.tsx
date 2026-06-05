@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
+
 export default function Error({
   error,
   reset,
@@ -10,7 +12,7 @@ export default function Error({
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4">
       <div className="text-center space-y-4">
-        <p className="text-4xl">⚠️</p>
+        <AlertTriangle className="w-12 h-12 text-primary mx-auto" />
         <h1 className="text-xl font-semibold">加载失败</h1>
         <p className="text-sm text-muted-foreground">
           {error.message || "请检查网络后重试"}
