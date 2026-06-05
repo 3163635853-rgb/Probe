@@ -209,14 +209,14 @@ function InterviewSession() {
       </div>
 
       {/* 输入区 */}
-      <footer className="border-t border-border p-4">
-        <div className="mx-auto max-w-3xl flex gap-3">
+      <footer className="border-t border-border p-3 sm:p-4 pb-[env(safe-area-inset-bottom,0.75rem)]">
+        <div className="mx-auto max-w-3xl flex gap-2 sm:gap-3">
           <textarea
             ref={inputRef}
             disabled={state.inputDisabled}
             placeholder={state.done ? "面试已结束" : "输入你的回答..."}
             rows={2}
-            className="flex-1 resize-none rounded-lg border border-border p-3 focus:outline-none focus:border-primary disabled:opacity-50"
+            className="flex-1 resize-none rounded-lg border border-border p-3 text-base focus:outline-none focus:border-primary disabled:opacity-50"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -228,14 +228,14 @@ function InterviewSession() {
             <button
               onClick={sendAnswer}
               disabled={state.inputDisabled}
-              className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground font-medium hover:bg-primary-hover transition-colors disabled:opacity-50 min-h-[44px]"
             >
               发送
             </button>
             <button
               onClick={skipQuestion}
               disabled={state.inputDisabled}
-              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-50"
+              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-50 min-h-[44px]"
             >
               跳过
             </button>

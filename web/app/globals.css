@@ -168,3 +168,17 @@ body {
 .dark ::-webkit-scrollbar-thumb {
   background: var(--stone-600);
 }
+
+/* Mobile: prevent zoom on input focus (iOS) */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px;
+  }
+}
+
+/* Safe area for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

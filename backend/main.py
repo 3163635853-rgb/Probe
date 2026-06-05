@@ -9,6 +9,7 @@ from api.config import router as config_router
 from api.quota import router as quota_router
 from api.interview import router as interview_router
 from api.interview_stream import router as interview_stream_router
+from api.feedback import router as feedback_router
 from middleware.rate_limit import RateLimitMiddleware
 
 
@@ -31,6 +32,7 @@ app.include_router(config_router)
 app.include_router(quota_router)
 app.include_router(interview_router)
 app.include_router(interview_stream_router)
+app.include_router(feedback_router)
 
 
 @app.get("/health")

@@ -1,0 +1,9 @@
+{
+  api.probe.app {
+    reverse_proxy backend:8000
+  }
+
+  probe.app {
+    reverse_proxy web:3000
+  }
+}

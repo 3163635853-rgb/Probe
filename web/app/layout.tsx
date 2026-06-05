@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Sora, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -14,6 +14,13 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Probe — AI 面试官",
