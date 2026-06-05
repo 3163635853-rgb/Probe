@@ -24,6 +24,7 @@ export interface SSEHandlers {
   onEvaluation?: (data: SSEEvaluationEvent) => void;
   onThinking?: (data: { content: string }) => void;
   onReport?: (data: SSEReportEvent) => void;
+  onReminder?: (data: { message: string }) => void;
   onError?: (data: SSEErrorEvent) => void;
   onDone?: () => void;
   onStateChange?: (state: SSEConnectionState) => void;
@@ -75,6 +76,10 @@ export function createSSE(url: string, handlers: SSEHandlers) {
 
   eventSource.addEventListener("report", (e) => {
     handlers.onReport?.(JSON.parse(e.data));
+  });
+
+  eventSource.addEventListener("reminder", (e) => {
+    handlers.onReminder?.(JSON.parse(e.data));
   });
 
   eventSource.addEventListener("error", (e) => {

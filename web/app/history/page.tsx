@@ -82,7 +82,7 @@ function HistoryContent() {
                     </p>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      {item.status === "in_progress" ? "进行中" : "未完成"}
+                      {item.status === "ongoing" ? "进行中" : "未完成"}
                     </span>
                   )}
                 </div>
