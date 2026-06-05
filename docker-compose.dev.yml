@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+asyncmy://probe:probe@mysql:3306/probe
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET=dev-secret
+      - DEBUG=true
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-placeholder}
+      - WX_APP_ID=${WX_APP_ID:-wx-dev}
+      - WX_APP_SECRET=${WX_APP_SECRET:-secret-dev}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=probe
+      - MYSQL_USER=probe
+      - MYSQL_PASSWORD=probe
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  mysql_data:
