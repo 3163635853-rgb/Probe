@@ -2,7 +2,7 @@ import asyncio
 import json
 import time
 from datetime import datetime, timezone
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
@@ -37,7 +37,7 @@ async def _push_event(session_id: str, seq: int, event: str, data: dict) -> str:
 
 
 @router.get("/{uuid}/stream")
-async def interview_stream(uuid: str, token: str = Query(...), last_event_id: int = Query(0, alias="Last-Event-ID")):
+async def interview_stream(uuid: str, token: str = Query(...), last_event_id: int = Header(0, alias="last-event-id")):
     """SSE 面试流"""
     # 验证 token
     payload = decode_token(token)

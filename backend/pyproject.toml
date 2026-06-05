@@ -19,4 +19,6 @@ dependencies = [
     "faiss-cpu>=1.14.2",
     "numpy>=2.4.6",
     "structlog>=25.5.0",
+    "bcrypt>=5.0.0",
+    "email-validator>=2.3.0",
 ]

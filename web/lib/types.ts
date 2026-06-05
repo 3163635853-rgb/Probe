@@ -81,7 +81,7 @@ export interface ActiveInterview {
   session_uuid: string;
   state: string;
   round: number;
-  started_at: string;
+  started_at: string | null;
   stream_url: string;
 }
 
@@ -90,7 +90,7 @@ export interface InterviewHistoryItem {
   industry: string;
   position: string;
   mode: string;
-  status: "completed" | "in_progress" | "abandoned";
+  status: "completed" | "ongoing" | "abandoned";
   final_score: number | null;
   duration_sec: number;
   total_rounds: number;

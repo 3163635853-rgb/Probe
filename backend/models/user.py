@@ -10,7 +10,9 @@ class User(Base, FullTimestampMixin):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     uuid: Mapped[str] = mapped_column(String(36), unique=True, nullable=False)
-    openid: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    email: Mapped[Optional[str]] = mapped_column(String(128), unique=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(128))
+    openid: Mapped[Optional[str]] = mapped_column(String(64), unique=True)
     union_id: Mapped[Optional[str]] = mapped_column(String(64))
     nickname: Mapped[Optional[str]] = mapped_column(String(64))
     avatar: Mapped[Optional[str]] = mapped_column(String(512))
