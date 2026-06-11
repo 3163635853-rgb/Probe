@@ -131,6 +131,10 @@ export default function HomePage() {
       {/* DEMO PREVIEW */}
       <section className="relative px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-4xl">
+          <div className="text-center mb-10">
+            <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">Live Preview</span>
+            <h2 className="text-2xl sm:text-4xl font-bold">一次面试，一份完整报告</h2>
+          </div>
           <div className="rounded-3xl border border-border bg-card shadow-xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-secondary/50">
               <div className="flex gap-1.5">
@@ -139,24 +143,16 @@ export default function HomePage() {
                 <div className="w-3 h-3 rounded-full bg-green-400/60" />
               </div>
               <div className="flex-1 flex justify-center">
-                <div className="px-4 py-1 rounded-md bg-background/80 text-xs text-muted-foreground border border-border/50">probe.app/interview</div>
+                <div className="px-4 py-1 rounded-md bg-background/80 text-xs text-muted-foreground border border-border/50">probe.app/report</div>
               </div>
             </div>
-            <div className="p-6 sm:p-8 space-y-4">
-              <div className="flex gap-3">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Brain className="w-4 h-4 text-primary" /></div>
-                <div className="rounded-2xl rounded-tl-sm bg-secondary px-4 py-3 max-w-md"><p className="text-sm">请介绍一下你对微服务架构的理解，以及在实际项目中如何决定服务拆分的粒度？</p></div>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-3 max-w-sm"><p className="text-sm">微服务架构是将单体应用拆分为多个独立部署的小服务，每个服务负责单一业务能力...</p></div>
-              </div>
-              <div className="flex gap-3">
-                <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Brain className="w-4 h-4 text-primary" /></div>
-                <div className="rounded-2xl rounded-tl-sm bg-secondary px-4 py-3 max-w-md"><p className="text-sm">不错。那如果两个服务之间有强数据一致性需求，你会怎么处理分布式事务？</p></div>
-              </div>
-              <div className="flex items-center gap-2 pl-11">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success/10 text-success text-xs font-medium"><Zap className="w-3 h-3" /> 当前得分 7.5/10</div>
-                <span className="text-xs text-muted-foreground">第 3/10 题</span>
+            <div className="relative">
+              <img src="/report-mockup.png" alt="Probe 面试报告示例" className="w-full h-auto" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <Link href="/interview/setup" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
+                  生成我的报告 <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
           </div>
@@ -197,25 +193,10 @@ export default function HomePage() {
           {/* Agent 架构图 */}
           <div className="mt-16 rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm animate-fade-in-up opacity-0 [animation-delay:300ms] [animation-fill-mode:forwards]">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-              {/* 左侧：架构描述 */}
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold flex items-center gap-2"><Brain className="w-5 h-5 text-primary" /> Agent 循环架构</h3>
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  {[
-                    { step: "感知", desc: "读取用户回答 + 面试进度状态" },
-                    { step: "记忆", desc: "检索 Redis 工作记忆 + FAISS 语义记忆" },
-                    { step: "推理", desc: "LLM 决策：追问 / 换题 / 提示 / 结束" },
-                    { step: "行动", desc: "生成下一题，通过 SSE 流式推送" },
-                    { step: "存储", desc: "写入记忆系统，更新用户能力画像" },
-                  ].map((item, i) => (
-                    <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors">
-                      <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary text-xs font-bold">{i + 1}</span>
-                      <div>
-                        <span className="font-medium text-foreground">{item.step}</span>
-                        <span className="text-muted-foreground ml-2">{item.desc}</span>
-                      </div>
-                    </div>
-                  ))}
+              {/* 左侧：架构可视化图 */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden border border-border/50 bg-background/50">
+                  <img src="/architecture.png" alt="Probe Agent Architecture" className="w-full h-full object-contain p-4" />
                 </div>
               </div>
 
