@@ -28,6 +28,7 @@ function CouponsContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchAPI<Coupon[]>(`/coupon/mine?status=${filter}`)
       .then(setCoupons)
       .finally(() => setLoading(false));

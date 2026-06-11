@@ -62,7 +62,12 @@ export default function LoginPage() {
   }
 
   // 微信扫码登录 URL（由后端生成，这里拼接开放平台 OAuth 地址）
-  const wechatAuthUrl = `https://open.weixin.qq.com/connect/qrconnect?appid=${process.env.NEXT_PUBLIC_WECHAT_APPID || "APPID"}&redirect_uri=${encodeURIComponent(window?.location?.origin + "/login")}&response_type=code&scope=snsapi_login&state=probe#wechat_redirect`;
+  const [wechatAuthUrl, setWechatAuthUrl] = useState("");
+  useEffect(() => {
+    const appId = process.env.NEXT_PUBLIC_WECHAT_APPID || "APPID";
+    const redirectUri = encodeURIComponent(window.location.origin + "/login");
+    setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=probe#wechat_redirect`);
+  }, []);
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4">

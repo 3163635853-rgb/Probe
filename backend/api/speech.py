@@ -55,7 +55,10 @@ async def transcribe(
     except Exception as e:
         raise HTTPException(status_code=500, detail={"code": 50001, "message": f"语音识别失败: {str(e)}"})
     finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        try:
+            Path(tmp_path).unlink()
+        except OSError:
+            pass
 
 
 @router.get("/tts")

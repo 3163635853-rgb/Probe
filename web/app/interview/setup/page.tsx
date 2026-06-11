@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { fetchAPI } from "@/lib/api";
 import { AuthGuard } from "@/components/AuthGuard";
 import type {
@@ -137,8 +138,9 @@ function SetupFlow() {
 
         {/* 配额提示 */}
         {quota && !quota.can_start_interview && (
-          <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
-            本月免费次数已用完（{quota.quota_used}/{quota.quota_total}），请升级套餐
+          <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive flex items-center justify-between">
+            <span>本月免费次数已用完（{quota.quota_used}/{quota.quota_total}）</span>
+            <Link href="/pricing" className="font-medium underline underline-offset-2 hover:no-underline">升级套餐</Link>
           </div>
         )}
         {quota && quota.can_start_interview && (

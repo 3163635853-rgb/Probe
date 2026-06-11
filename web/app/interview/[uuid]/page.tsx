@@ -166,21 +166,33 @@ function InterviewSession() {
     const content = inputRef.current?.value.trim();
     if (!content) return;
     dispatch({ type: "ADD_USER_MSG", content });
-    inputRef.current!.value = "";
-    await fetchAPI(`/interview/${uuid}/answer`, {
-      method: "POST",
-      body: JSON.stringify({ content, type: "text" }),
-    });
+    if (inputRef.current) inputRef.current.value = "";
+    try {
+      await fetchAPI(`/interview/${uuid}/answer`, {
+        method: "POST",
+        body: JSON.stringify({ content, type: "text" }),
+      });
+    } catch {
+      // SSE 会推送下一步，网络错误时静默
+    }
   }, [uuid]);
 
   const skipQuestion = useCallback(async () => {
     dispatch({ type: "SET_INPUT_DISABLED", value: true });
-    await fetchAPI(`/interview/${uuid}/skip`, { method: "POST" });
+    try {
+      await fetchAPI(`/interview/${uuid}/skip`, { method: "POST" });
+    } catch {
+      dispatch({ type: "SET_INPUT_DISABLED", value: false });
+    }
   }, [uuid]);
 
   const endInterview = useCallback(async () => {
     if (!confirm("确定要结束面试吗？")) return;
-    await fetchAPI(`/interview/${uuid}/end`, { method: "POST" });
+    try {
+      await fetchAPI(`/interview/${uuid}/end`, { method: "POST" });
+    } catch {
+      // 静默
+    }
   }, [uuid]);
 
   const progress = state.status?.progress || "0/10";

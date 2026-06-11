@@ -1,5 +1,6 @@
 import uuid as uuid_lib
 import time
+import secrets
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +45,7 @@ async def create_order(
     if not plan:
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "无效的产品类型"})
 
-    order_no = f"PROBE{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}{user.id}"
+    order_no = f"PROBE{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}{secrets.token_hex(4)}"
     payment = Payment(
         uuid=str(uuid_lib.uuid4()),
         user_id=user.id,
@@ -75,6 +76,11 @@ async def create_order(
 @router.post("/webhook")
 async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """微信支付回调（生产环境需验签）"""
+    from config import settings
+    if not settings.DEBUG:
+        # TODO: 实现微信支付签名验证
+        raise HTTPException(status_code=403, detail={"code": 40301, "message": "签名验证未实现"})
+
     body = await request.json()
     order_no = body.get("order_no", "")
     transaction_id = body.get("transaction_id", "")
@@ -106,14 +112,16 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         if existing_sub and existing_sub.expire_at > now:
             # 续期
             existing_sub.expire_at = existing_sub.expire_at + timedelta(days=days)
+            new_expire = existing_sub.expire_at
         else:
             # 新建
+            new_expire = now + timedelta(days=days)
             sub = Subscription(
                 user_id=payment.user_id,
                 plan=payment.product_type,
                 status="active",
                 started_at=now,
-                expire_at=now + timedelta(days=days),
+                expire_at=new_expire,
             )
             db.add(sub)
 
@@ -121,8 +129,7 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         user = await db.get(User, payment.user_id)
         if user:
             user.membership_type = payment.product_type
-            user.membership_expire_at = (existing_sub.expire_at if existing_sub and existing_sub.expire_at > now
-                                         else now + timedelta(days=days))
+            user.membership_expire_at = new_expire
 
     await db.commit()
     return {"code": 0, "message": "success"}

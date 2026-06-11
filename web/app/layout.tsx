@@ -39,6 +39,13 @@ export default function RootLayout({
       className={`${sora.variable} ${geistMono.variable} h-full`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("probe_theme");if(t==="dark")document.documentElement.classList.add("dark")}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans antialiased">
         <ThemeProvider>
           <OfflineBanner />
