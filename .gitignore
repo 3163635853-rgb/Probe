@@ -34,3 +34,6 @@ redis_data/
 
 # Logs
 *.log
+
+# Temp
+image/

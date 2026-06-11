@@ -1,9 +1,17 @@
-{
-  api.probe.app {
-    reverse_proxy backend:8000
-  }
+api.probe.app {
+	reverse_proxy backend:8000
+}
 
-  probe.app {
-    reverse_proxy web:3000
-  }
+probe.app {
+	reverse_proxy web:3000
+}
+
+# 本地开发用（不走域名时）
+:80 {
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
 }
