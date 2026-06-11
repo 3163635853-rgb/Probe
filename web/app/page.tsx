@@ -3,7 +3,7 @@ import { CountUp } from "@/components/CountUp";
 import {
   Brain, Zap, BarChart3, Target, ArrowRight,
   MessageSquare, FileText, Sparkles, Shield, Users, Clock,
-  ChevronRight,
+  ChevronRight, Layers, Code2, ExternalLink,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -16,6 +16,7 @@ export default function HomePage() {
           <div className="hidden sm:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">功能</a>
             <a href="#how-it-works" className="hover:text-foreground transition-colors">流程</a>
+            <a href="#tech" className="hover:text-foreground transition-colors">技术</a>
             <a href="#stats" className="hover:text-foreground transition-colors">数据</a>
           </div>
           <div className="flex items-center gap-3">
@@ -175,6 +176,123 @@ export default function HomePage() {
                   <p className="mt-1.5 text-sm text-muted-foreground">{stat.label}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TECH ARCHITECTURE — 展示技术实力 */}
+      <section id="tech" className="relative px-4 py-28 sm:py-36">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-secondary/40 to-transparent" />
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center animate-fade-in-up opacity-0 [animation-delay:100ms] [animation-fill-mode:forwards]">
+            <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">Technical Architecture</span>
+            <h2 className="text-3xl sm:text-5xl font-bold leading-tight">不是调 API 的玩具<br />是<span className="text-primary">完整的智能体系统</span></h2>
+          </div>
+
+          {/* Agent 架构图 */}
+          <div className="mt-16 rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm animate-fade-in-up opacity-0 [animation-delay:300ms] [animation-fill-mode:forwards]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+              {/* 左侧：架构描述 */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold flex items-center gap-2"><Brain className="w-5 h-5 text-primary" /> Agent 循环架构</h3>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  {[
+                    { step: "感知", desc: "读取用户回答 + 面试进度状态" },
+                    { step: "记忆", desc: "检索 Redis 工作记忆 + FAISS 语义记忆" },
+                    { step: "推理", desc: "LLM 决策：追问 / 换题 / 提示 / 结束" },
+                    { step: "行动", desc: "生成下一题，通过 SSE 流式推送" },
+                    { step: "存储", desc: "写入记忆系统，更新用户能力画像" },
+                  ].map((item, i) => (
+                    <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors">
+                      <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary text-xs font-bold">{i + 1}</span>
+                      <div>
+                        <span className="font-medium text-foreground">{item.step}</span>
+                        <span className="text-muted-foreground ml-2">{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 右侧：技术栈标签 */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold flex items-center gap-2"><Layers className="w-5 h-5 text-primary" /> 技术栈</h3>
+                <div className="space-y-4">
+                  {[
+                    { layer: "智能体", tags: ["自研 Agent Loop", "ReAct 架构", "4 子智能体", "状态机"] },
+                    { layer: "后端", tags: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "SSE 流式"] },
+                    { layer: "AI", tags: ["DeepSeek API", "FAISS 向量检索", "BGE-M3 Embedding"] },
+                    { layer: "前端", tags: ["Next.js 16", "TypeScript", "Tailwind CSS", "Recharts"] },
+                    { layer: "基础设施", tags: ["Docker Compose", "MySQL 8", "Redis 7", "Caddy", "GitHub Actions"] },
+                  ].map(group => (
+                    <div key={group.layer}>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.layer}</span>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {group.tags.map(tag => (
+                          <span key={tag} className="inline-block px-3 py-1.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors cursor-default">{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 项目指标 */}
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in-up opacity-0 [animation-delay:500ms] [animation-fill-mode:forwards]">
+            {[
+              { label: "代码量", value: "16,000+", unit: "行" },
+              { label: "API 端点", value: "23+", unit: "个" },
+              { label: "数据库表", value: "20+", unit: "张" },
+              { label: "开发周期", value: "4", unit: "周" },
+            ].map(item => (
+              <div key={item.label} className="rounded-2xl border border-border bg-card p-5 text-center hover:border-primary/20 transition-colors">
+                <p className="text-2xl font-bold text-foreground">{item.value}<span className="text-sm font-normal text-muted-foreground ml-1">{item.unit}</span></p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* BUILDER — 开发者信息 */}
+      <section className="relative px-4 py-28 sm:py-36">
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm animate-fade-in-up opacity-0 [animation-delay:200ms] [animation-fill-mode:forwards]">
+            <div className="flex flex-col sm:flex-row gap-8 items-start">
+              <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10">
+                <Code2 className="w-9 h-9 text-primary" />
+              </div>
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h3 className="text-2xl font-bold">独立全栈开发</h3>
+                  <p className="mt-2 text-muted-foreground leading-relaxed">
+                    从产品设计、架构设计、数据库建模，到后端 Agent 开发、前端实现、部署运维 — 全部由一个人独立完成。
+                    不是用模板拼凑的 demo，是可以服务真实用户的生产级系统。
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  {[
+                    { label: "架构设计", desc: "Agent 状态机 + 三层记忆 + 向量检索" },
+                    { label: "工程质量", desc: "完整 CI/CD + Docker + Alembic 迁移" },
+                    { label: "产品思维", desc: "竞品分析 → 差异化定位 → MVP 落地" },
+                  ].map(item => (
+                    <div key={item.label} className="p-3 rounded-xl bg-secondary/50 border border-border/50">
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 pt-3">
+                  <a href="https://github.com/3163635853-rgb/Probe" target="_blank" rel="noopener" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                    <ExternalLink className="w-4 h-4" /> 查看源码
+                  </a>
+                  <span className="text-border">|</span>
+                  <span className="text-sm text-muted-foreground">全栈工程师 · 2026</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
