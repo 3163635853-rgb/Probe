@@ -39,6 +39,73 @@ class ProfileUpdateRequest(BaseModel):
     avatar: Optional[str] = None
 
 
+class WechatLoginRequest(BaseModel):
+    code: str
+    invite_code: Optional[str] = None
+
+
+@router.post("/wechat")
+async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_db)):
+    """微信登录: code → openid → 查/建用户 → JWT"""
+    import httpx
+    from config import settings
+
+    if settings.DEBUG or not settings.WX_APP_ID:
+        # 开发模式 mock
+        openid = f"dev_{req.code}"
+    else:
+        # 调微信 API
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                "https://api.weixin.qq.com/sns/jscode2session",
+                params={
+                    "appid": settings.WX_APP_ID,
+                    "secret": settings.WX_APP_SECRET,
+                    "js_code": req.code,
+                    "grant_type": "authorization_code",
+                },
+                timeout=10,
+            )
+            data = resp.json()
+            if "openid" not in data:
+                raise HTTPException(status_code=401, detail={"code": 40001, "message": "微信授权失败"})
+            openid = data["openid"]
+
+    # 查或建用户
+    result = await db.execute(select(User).where(User.openid == openid))
+    user = result.scalar_one_or_none()
+    is_new = False
+
+    if not user:
+        user = User(
+            uuid=str(uuid_lib.uuid4()),
+            openid=openid,
+            nickname=f"微信用户",
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        is_new = True
+
+    token, expires_at = create_token(user.id, user.uuid)
+
+    return {
+        "code": 0,
+        "data": {
+            "token": token,
+            "expires_at": expires_at.isoformat(),
+            "user": {
+                "uuid": user.uuid,
+                "nickname": user.nickname,
+                "avatar": user.avatar,
+                "membership_type": user.membership_type,
+                "membership_expire_at": user.membership_expire_at.isoformat() if user.membership_expire_at else None,
+            },
+            "is_new_user": is_new,
+        },
+    }
+
+
 @router.post("/register")
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """邮箱注册"""
