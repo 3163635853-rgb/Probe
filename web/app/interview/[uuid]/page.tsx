@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useCallback } from "react";
+import { useEffect, useReducer, useRef, useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/AuthGuard";
 import { getToken } from "@/lib/auth";
 import { fetchAPI } from "@/lib/api";
 import { createSSE, type SSEConnectionState } from "@/lib/sse";
 import type { SSEQuestionEvent, SSEStatusEvent } from "@/lib/types";
+import { Brain, Send, SkipForward, X, Wifi, WifiOff } from "lucide-react";
 
 // State
 interface Message {
@@ -14,6 +15,7 @@ interface Message {
   role: "ai" | "user";
   content: string;
   typing?: boolean;
+  score?: number;
 }
 
 interface InterviewState {
@@ -23,6 +25,7 @@ interface InterviewState {
   thinking: boolean;
   inputDisabled: boolean;
   done: boolean;
+  lastScore: { round: number; score: number; brief: string } | null;
 }
 
 type Action =
@@ -33,7 +36,8 @@ type Action =
   | { type: "SET_CONNECTION"; state: SSEConnectionState }
   | { type: "SET_THINKING"; value: boolean }
   | { type: "SET_INPUT_DISABLED"; value: boolean }
-  | { type: "SET_DONE" };
+  | { type: "SET_DONE" }
+  | { type: "SET_SCORE"; data: { round: number; score: number; brief: string } };
 
 let msgId = 0;
 
@@ -44,6 +48,7 @@ function reducer(state: InterviewState, action: Action): InterviewState {
         ...state,
         thinking: false,
         inputDisabled: false,
+        lastScore: null,
         messages: [...state.messages, { id: ++msgId, role: "ai", content: action.content, typing: true }],
       };
     case "FINISH_TYPING":
@@ -69,6 +74,8 @@ function reducer(state: InterviewState, action: Action): InterviewState {
       return { ...state, inputDisabled: action.value };
     case "SET_DONE":
       return { ...state, done: true, inputDisabled: true };
+    case "SET_SCORE":
+      return { ...state, lastScore: action.data };
     default:
       return state;
   }
@@ -81,6 +88,7 @@ const INITIAL_STATE: InterviewState = {
   thinking: false,
   inputDisabled: true,
   done: false,
+  lastScore: null,
 };
 
 export default function InterviewPage() {
@@ -115,15 +123,16 @@ function InterviewSession() {
       onThinking() {
         dispatch({ type: "SET_THINKING", value: true });
       },
+      onEvaluation(data: { round: number; score: number; brief: string }) {
+        dispatch({ type: "SET_SCORE", data });
+      },
       onReport(data) {
         router.push(`/interview/${data.session_uuid}/report`);
       },
       onDone() {
         dispatch({ type: "SET_DONE" });
       },
-      onError() {
-        // 显示在 UI 上，不阻断
-      },
+      onError() {},
       onStateChange(s) {
         dispatch({ type: "SET_CONNECTION", state: s });
       },
@@ -140,9 +149,7 @@ function InterviewSession() {
   // 页面离开提示
   useEffect(() => {
     if (state.done) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-    };
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [state.done]);
@@ -169,54 +176,58 @@ function InterviewSession() {
   }, [uuid]);
 
   const progress = state.status?.progress || "0/10";
+  const [current, total] = progress.split("/").map(Number);
   const elapsed = state.status?.elapsed || 0;
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
 
   return (
-    <main className="flex flex-1 flex-col h-screen">
+    <main className="flex flex-1 flex-col h-screen bg-background">
       {/* 顶栏 */}
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">进度 {progress}</span>
-          <span className="text-sm text-muted-foreground">
-            {minutes}:{seconds.toString().padStart(2, "0")}
-          </span>
+      <header className="flex items-center justify-between border-b border-border px-4 sm:px-6 py-3 bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center gap-5">
+          {/* 环形进度 */}
+          <ProgressRing current={current} total={total} />
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">第 {current}/{total} 题</span>
+            <span className="text-xs text-muted-foreground">
+              {minutes}:{seconds.toString().padStart(2, "0")}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <ConnectionBadge state={state.connection} />
           <button
             onClick={endInterview}
-            className="rounded-lg border border-destructive px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            disabled={state.done}
+            className="group rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors disabled:opacity-40"
           >
-            结束面试
+            <X className="w-4 h-4 inline mr-1" />结束
           </button>
         </div>
       </header>
 
+      {/* 评分浮层 */}
+      {state.lastScore && <ScoreToast score={state.lastScore} />}
+
       {/* 对话区 */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
         {state.messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} onTypingDone={() => dispatch({ type: "FINISH_TYPING", id: msg.id })} />
         ))}
-        {state.thinking && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-primary" />
-            正在分析...
-          </div>
-        )}
+        {state.thinking && <ThinkingIndicator />}
         <div ref={bottomRef} />
       </div>
 
       {/* 输入区 */}
-      <footer className="border-t border-border p-3 sm:p-4 pb-[env(safe-area-inset-bottom,0.75rem)]">
-        <div className="mx-auto max-w-3xl flex gap-2 sm:gap-3">
+      <footer className="border-t border-border bg-card/80 backdrop-blur-sm p-3 sm:p-4 pb-[env(safe-area-inset-bottom,0.75rem)]">
+        <div className="mx-auto max-w-3xl flex gap-2 sm:gap-3 items-end">
           <textarea
             ref={inputRef}
             disabled={state.inputDisabled}
-            placeholder={state.done ? "面试已结束" : "输入你的回答..."}
+            placeholder={state.done ? "面试已结束" : "输入你的回答... (Enter 发送，Shift+Enter 换行)"}
             rows={2}
-            className="flex-1 resize-none rounded-lg border border-border p-3 text-base focus:outline-none focus:border-primary disabled:opacity-50"
+            className="flex-1 resize-none rounded-xl border border-border bg-background p-3 text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 transition-all"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -228,16 +239,18 @@ function InterviewSession() {
             <button
               onClick={sendAnswer}
               disabled={state.inputDisabled}
-              className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground font-medium hover:bg-primary-hover transition-colors disabled:opacity-50 min-h-[44px]"
+              className="rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-40 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title="发送"
             >
-              发送
+              <Send className="w-5 h-5" />
             </button>
             <button
               onClick={skipQuestion}
               disabled={state.inputDisabled}
-              className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-50 min-h-[44px]"
+              className="rounded-xl border border-border p-3 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              title="跳过"
             >
-              跳过
+              <SkipForward className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -246,7 +259,73 @@ function InterviewSession() {
   );
 }
 
-// 对话气泡
+// 环形进度
+function ProgressRing({ current, total }: { current: number; total: number }) {
+  const pct = total > 0 ? (current / total) * 100 : 0;
+  const r = 18;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (pct / 100) * circumference;
+
+  return (
+    <div className="relative w-12 h-12 flex items-center justify-center">
+      <svg className="w-12 h-12 -rotate-90" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" className="text-border" strokeWidth="3" />
+        <circle
+          cx="22" cy="22" r={r} fill="none" stroke="currentColor" className="text-primary"
+          strokeWidth="3" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        />
+      </svg>
+      <span className="absolute text-xs font-bold">{current}</span>
+    </div>
+  );
+}
+
+// 评分浮层
+function ScoreToast({ score }: { score: { round: number; score: number; brief: string } }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 4000);
+    return () => clearTimeout(t);
+  }, [score]);
+
+  if (!visible) return null;
+
+  const color = score.score >= 7 ? "text-success border-success/20 bg-success/5" :
+    score.score >= 5 ? "text-primary border-primary/20 bg-primary/5" :
+    "text-destructive border-destructive/20 bg-destructive/5";
+
+  return (
+    <div className={`absolute top-16 right-4 z-40 animate-slide-in-right rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm ${color}`}>
+      <div className="flex items-center gap-3">
+        <span className="text-2xl font-bold">{score.score}/10</span>
+        <span className="text-xs max-w-[160px] leading-tight opacity-80">{score.brief}</span>
+      </div>
+    </div>
+  );
+}
+
+// 思考动画 — 三个跳动的点
+function ThinkingIndicator() {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <Brain className="w-4 h-4 text-primary" />
+      </div>
+      <div className="rounded-2xl rounded-tl-sm bg-muted px-4 py-3">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]" />
+          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:150ms]" />
+          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce [animation-delay:300ms]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 对话气泡 — 带头像
 function ChatBubble({ message, onTypingDone }: { message: Message; onTypingDone: () => void }) {
   const isAi = message.role === "ai";
 
@@ -258,18 +337,23 @@ function ChatBubble({ message, onTypingDone }: { message: Message; onTypingDone:
   }, [message.typing, message.content.length, onTypingDone]);
 
   return (
-    <div className={`flex ${isAi ? "justify-start" : "justify-end"}`}>
+    <div className={`flex items-start gap-3 ${isAi ? "justify-start" : "justify-end"}`}>
+      {isAi && (
+        <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+          <Brain className="w-4 h-4 text-primary" />
+        </div>
+      )}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+        className={`max-w-[75%] rounded-2xl px-4 py-3 shadow-sm ${
           isAi
-            ? "bg-muted text-foreground"
-            : "bg-primary text-primary-foreground"
+            ? "rounded-tl-sm bg-muted text-foreground"
+            : "rounded-tr-sm bg-primary text-primary-foreground"
         }`}
       >
         {isAi && message.typing ? (
           <TypeWriter text={message.content} />
         ) : (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
         )}
       </div>
     </div>
@@ -293,23 +377,23 @@ function TypeWriter({ text }: { text: string }) {
     return () => clearInterval(interval);
   }, [text]);
 
-  return <p className="whitespace-pre-wrap">{displayed}<span className="animate-pulse">|</span></p>;
+  return <p className="whitespace-pre-wrap leading-relaxed">{displayed}<span className="animate-pulse text-primary">|</span></p>;
 }
 
 // 连接状态标记
 function ConnectionBadge({ state }: { state: SSEConnectionState }) {
   const config = {
-    connecting: { color: "bg-yellow-400", label: "连接中" },
-    connected: { color: "bg-success", label: "已连接" },
-    reconnecting: { color: "bg-yellow-400", label: "重连中" },
-    closed: { color: "bg-muted-foreground", label: "已断开" },
+    connecting: { icon: Wifi, color: "text-yellow-500", label: "连接中" },
+    connected: { icon: Wifi, color: "text-success", label: "已连接" },
+    reconnecting: { icon: Wifi, color: "text-yellow-500", label: "重连中" },
+    closed: { icon: WifiOff, color: "text-muted-foreground", label: "已断开" },
   };
-  const { color, label } = config[state];
+  const { icon: Icon, color, label } = config[state];
 
   return (
-    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span className={`inline-block h-2 w-2 rounded-full ${color}`} />
-      {label}
+    <span className={`flex items-center gap-1.5 text-xs ${color}`}>
+      <Icon className="w-3.5 h-3.5" />
+      <span className="hidden sm:inline">{label}</span>
     </span>
   );
 }
