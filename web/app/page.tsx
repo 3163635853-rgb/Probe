@@ -29,7 +29,11 @@ export default function HomePage() {
       {/* HERO */}
       <section className="relative flex flex-col items-center justify-center min-h-screen px-4 pt-32 pb-24">
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[160%] h-[80%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(251,191,36,0.08)_0%,transparent_60%)]" />
+          {/* AI 生成的背景图 */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-[0.15] pointer-events-none">
+            <img src="/hero-bg.png" alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
           <div className="absolute top-[10%] left-[5%] w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl animate-float" />
           <div className="absolute bottom-[15%] right-[5%] w-[28rem] h-[28rem] rounded-full bg-primary/[0.06] blur-3xl animate-float-delay" />
           <div className="absolute inset-0 bg-[linear-gradient(rgba(217,119,6,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(217,119,6,0.02)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
