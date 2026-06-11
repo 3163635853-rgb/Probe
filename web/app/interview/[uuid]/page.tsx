@@ -8,6 +8,7 @@ import { fetchAPI } from "@/lib/api";
 import { createSSE, type SSEConnectionState } from "@/lib/sse";
 import type { SSEQuestionEvent, SSEStatusEvent } from "@/lib/types";
 import { Brain, Send, SkipForward, X, Wifi, WifiOff } from "lucide-react";
+import { FeedbackModal } from "@/components/FeedbackModal";
 
 // State
 interface Message {
@@ -103,6 +104,8 @@ function InterviewSession() {
   const { uuid } = useParams<{ uuid: string }>();
   const router = useRouter();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const reportUrlRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<ReturnType<typeof createSSE> | null>(null);
@@ -127,10 +130,15 @@ function InterviewSession() {
         dispatch({ type: "SET_SCORE", data });
       },
       onReport(data) {
-        router.push(`/interview/${data.session_uuid}/report`);
+        reportUrlRef.current = `/interview/${data.session_uuid}/report`;
+        setShowFeedback(true);
       },
       onDone() {
         dispatch({ type: "SET_DONE" });
+        if (!reportUrlRef.current) {
+          reportUrlRef.current = `/interview/${uuid}/report`;
+          setShowFeedback(true);
+        }
       },
       onError() {},
       onStateChange(s) {
@@ -255,6 +263,17 @@ function InterviewSession() {
           </div>
         </div>
       </footer>
+
+      {/* 评分弹窗 */}
+      {showFeedback && (
+        <FeedbackModal
+          sessionUuid={uuid}
+          onClose={() => {
+            setShowFeedback(false);
+            if (reportUrlRef.current) router.push(reportUrlRef.current);
+          }}
+        />
+      )}
     </main>
   );
 }

@@ -21,7 +21,10 @@ async def get_current_user(
     if not payload:
         raise HTTPException(status_code=401, detail={"code": 40001, "message": "未登录或 token 已过期"})
 
-    user_id = int(payload["sub"])
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(status_code=401, detail={"code": 40001, "message": "无效 token"})
+    user_id = int(user_id_str)
     result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
     user = result.scalar_one_or_none()
     if not user:

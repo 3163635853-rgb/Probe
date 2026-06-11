@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, TrendingUp, Lightbulb, XCircle } from "lucide-react";
+import { CheckCircle, TrendingUp, Lightbulb, XCircle, Brain, Download } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewReport } from "@/lib/types";
@@ -28,6 +28,8 @@ function ReportContent() {
   const { uuid } = useParams<{ uuid: string }>();
   const [report, setReport] = useState<InterviewReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"report" | "replay">("report");
+  const shareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchAPI<InterviewReport>(`/interview/${uuid}/report`)
@@ -63,8 +65,8 @@ function ReportContent() {
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
-        {/* 总分 */}
-        <div className="text-center space-y-2">
+        {/* 总分 — 可截图区域 */}
+        <div ref={shareRef} className="text-center space-y-2 bg-background p-6 rounded-xl">
           <p className={`text-6xl font-bold ${report.overall_score >= 70 ? "text-success" : "text-primary"}`}>
             {report.overall_score}
           </p>
@@ -81,6 +83,54 @@ function ReportContent() {
             {report.overall_score >= 70 ? "表现优秀" : "待提升"}
           </span>
         </div>
+
+        {/* Tab 切换 */}
+        <div className="flex rounded-lg bg-secondary p-1">
+          <button
+            onClick={() => setTab("report")}
+            className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "report" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+          >
+            分析报告
+          </button>
+          <button
+            onClick={() => setTab("replay")}
+            className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${tab === "replay" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+          >
+            对话回放
+          </button>
+        </div>
+
+        {tab === "replay" ? (
+          /* 对话回放 */
+          <div className="space-y-4">
+            {report.rounds.map((r) => (
+              <div key={r.round} className="space-y-3">
+                {/* AI 提问 */}
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                    <Brain className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm bg-muted px-4 py-3 max-w-[80%]">
+                    <p className="text-sm whitespace-pre-wrap">{r.question}</p>
+                  </div>
+                </div>
+                {/* 用户回答 */}
+                <div className="flex items-start gap-3 justify-end">
+                  <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-3 max-w-[80%]">
+                    <p className="text-sm whitespace-pre-wrap">{r.answer || "(跳过)"}</p>
+                  </div>
+                </div>
+                {/* 得分标签 */}
+                <div className="flex justify-end">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${r.score >= 7 ? "bg-success/10 text-success" : r.score >= 5 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                    {r.score}/10
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+        <>
 
         {/* 雷达图 */}
         <div className="h-72">
@@ -169,6 +219,8 @@ function ReportContent() {
             </details>
           ))}
         </div>
+        </>
+        )}
 
         {/* 底部操作 */}
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -179,10 +231,18 @@ function ReportContent() {
             再来一次
           </Link>
           <button
-            onClick={() => { navigator.clipboard.writeText(window.location.href); }}
-            className="flex-1 rounded-full border border-border py-3 font-medium hover:bg-secondary transition-colors"
+            onClick={async () => {
+              if (!shareRef.current) return;
+              const html2canvas = (await import("html2canvas")).default;
+              const canvas = await html2canvas(shareRef.current, { scale: 2 });
+              const link = document.createElement("a");
+              link.download = `probe-report-${uuid}.png`;
+              link.href = canvas.toDataURL();
+              link.click();
+            }}
+            className="flex-1 rounded-full border border-border py-3 font-medium hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5"
           >
-            复制链接
+            <Download className="w-4 h-4" /> 保存图片
           </button>
           <Link
             href="/history"

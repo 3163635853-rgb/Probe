@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CountUp } from "@/components/CountUp";
 import { ScrollReveal } from "@/components/ScrollReveal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Brain, Zap, BarChart3, Target, ArrowRight,
   MessageSquare, FileText, Sparkles, Shield, Users, Clock,
@@ -23,6 +24,7 @@ export default function HomePage() {
             <a href="#stats" className="hover:text-foreground transition-colors">数据</a>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">登录</Link>
             <Link href="/interview/setup" className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">开始面试</Link>
           </div>

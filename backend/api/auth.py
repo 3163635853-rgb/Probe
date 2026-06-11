@@ -142,10 +142,12 @@ async def update_profile(
     db: AsyncSession = Depends(get_db),
 ):
     user, new_token = auth
+    # 重新从当前 session 加载 user
+    db_user = await db.get(User, user.id)
     if req.nickname is not None:
-        user.nickname = req.nickname
+        db_user.nickname = req.nickname
     if req.avatar is not None:
-        user.avatar = req.avatar
+        db_user.avatar = req.avatar
     await db.commit()
 
     response = JSONResponse(content={"code": 0, "data": {"updated": True}})

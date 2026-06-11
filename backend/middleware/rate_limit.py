@@ -15,6 +15,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Identify caller
+        client_host = request.client.host if request.client else "unknown"
         auth_header = request.headers.get("authorization", "")
         if auth_header.startswith("Bearer "):
             payload = decode_token(auth_header[7:])
@@ -22,10 +23,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 key = f"rate:{payload['sub']}"
                 limit = 30
             else:
-                key = f"rate:ip:{request.client.host}"
+                key = f"rate:ip:{client_host}"
                 limit = 10
         else:
-            key = f"rate:ip:{request.client.host}"
+            key = f"rate:ip:{client_host}"
             limit = 10
 
         try:

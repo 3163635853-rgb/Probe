@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, TrendingUp } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewHistoryItem, PaginatedData } from "@/lib/types";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 export default function HistoryPage() {
   return (
@@ -58,8 +59,11 @@ function HistoryContent() {
 
   return (
     <main className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-3xl px-4 py-8 space-y-4">
+      <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
         <h1 className="text-2xl font-bold">面试记录</h1>
+
+        {/* 趋势图 */}
+        <ScoreTrend items={items} />
 
         <div className="space-y-3">
           {items.map((item) => (
@@ -108,4 +112,38 @@ function HistoryContent() {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")}`;
+}
+
+function ScoreTrend({ items }: { items: InterviewHistoryItem[] }) {
+  const scored = items
+    .filter((i) => i.final_score !== null)
+    .reverse()
+    .map((i) => ({
+      date: new Date(i.started_at).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
+      score: i.final_score,
+    }));
+
+  if (scored.length < 2) return null;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <TrendingUp className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium">成绩趋势</span>
+      </div>
+      <div className="h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={scored}>
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" width={30} />
+            <Tooltip
+              contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", background: "var(--card)" }}
+              labelStyle={{ color: "var(--foreground)" }}
+            />
+            <Line type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={2} dot={{ r: 4, fill: "var(--primary)" }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
 }

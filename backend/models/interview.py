@@ -1,6 +1,6 @@
 from sqlalchemy import BigInteger, String, DateTime, Integer, SmallInteger, Text, JSON, Boolean, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from models.base import Base, TimestampMixin
 
@@ -22,7 +22,7 @@ class InterviewSession(Base, TimestampMixin):
     duration_sec: Mapped[Optional[int]] = mapped_column(Integer)
     report_json: Mapped[Optional[dict]] = mapped_column(JSON)
     report_version: Mapped[int] = mapped_column(SmallInteger, default=1)
-    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 

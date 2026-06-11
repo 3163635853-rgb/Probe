@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Sora, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import "./globals.css";
 
@@ -36,10 +37,13 @@ export default function RootLayout({
     <html
       lang="zh-CN"
       className={`${sora.variable} ${geistMono.variable} h-full`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans antialiased">
-        <OfflineBanner />
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>
+          <OfflineBanner />
+          <AuthProvider>{children}</AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

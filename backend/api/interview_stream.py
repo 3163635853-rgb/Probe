@@ -4,7 +4,10 @@ import time
 from datetime import datetime, timezone
 from fastapi import APIRouter, Query, Header, HTTPException
 from fastapi.responses import StreamingResponse
+import logging
 from sqlalchemy import select
+
+logger = logging.getLogger(__name__)
 
 from db.mysql import AsyncSessionLocal
 from db.redis import redis_client
@@ -138,8 +141,8 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             )
             plan_data = plan_result.get("outline", [])
             max_rounds = plan_result.get("total_rounds", 10)
-        except Exception:
-            # 降级: 用默认大纲
+        except Exception as e:
+            logger.warning(f"Plan generation failed, using default: {e}")
             plan_data = [{"round": i + 1, "type": "tech", "topic": "通用", "difficulty": difficulty} for i in range(10)]
             max_rounds = 10
 
@@ -282,10 +285,36 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     seq += 1
     yield await _push_event(session_uuid, seq, "status", {"state": "REPORTING", "progress": f"{current_round}/{max_rounds}", "elapsed": 0})
 
+    # 从 DB 查全部轮次用于生成报告
+    all_rounds_for_report = recent_rounds  # fallback
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import asc
+            rounds_result = await db.execute(
+                select(InterviewRound)
+                .where(InterviewRound.session_id == session_db_id)
+                .order_by(asc(InterviewRound.round_num))
+            )
+            db_rounds = rounds_result.scalars().all()
+            if db_rounds:
+                all_rounds_for_report = [
+                    {
+                        "round_num": r.round_num,
+                        "question": r.question,
+                        "answer": r.answer or "",
+                        "score": r.score or 0,
+                        "evaluation": r.evaluation or {},
+                    }
+                    for r in db_rounds
+                ]
+    except Exception as e:
+        logger.warning(f"Failed to load rounds from DB for report: {e}")
+
     # 生成报告
     try:
-        report_data = await report(rounds=recent_rounds, mode_code=mode_code, difficulty=difficulty)
-    except Exception:
+        report_data = await report(rounds=all_rounds_for_report, mode_code=mode_code, difficulty=difficulty)
+    except Exception as e:
+        logger.error(f"Report generation failed: {e}")
         report_data = {
             "overall_score": 0,
             "dimensions": {},
@@ -352,8 +381,8 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
                 from memory.working import mark_asked
                 await mark_asked(session_uuid, results[0].id)
                 return results[0].question, "knowledge_base"
-    except Exception:
-        pass  # 降级到 AI 生成
+    except Exception as e:
+        logger.debug(f"Knowledge retrieval failed, falling back to AI: {e}")
 
     # AI 生成
     context = ""

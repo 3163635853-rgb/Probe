@@ -41,16 +41,18 @@ async def start_interview(
     user, _ = auth
     await ensure_quota_initialized(user)
 
+    # 创建 session UUID 先生成，保证 Lua 脚本写入正确值
+    session_uuid = str(uuid_lib.uuid4())
+
     # 原子扣配额
     month = datetime.now(timezone.utc).strftime("%Y-%m")
-    result = await deduct_quota(user.id, str(user.id), month)
+    result = await deduct_quota(user.id, session_uuid, month)
     if result == -1:
         raise HTTPException(status_code=403, detail={"code": 40201, "message": "配额不足，本月免费次数已用完"})
     if result == -2:
         raise HTTPException(status_code=409, detail={"code": 40202, "message": "已有进行中的面试"})
 
     # 创建 session
-    session_uuid = str(uuid_lib.uuid4())
     session = InterviewSession(
         uuid=session_uuid,
         user_id=user.id,
@@ -260,20 +262,24 @@ async def interview_history(
     )
     sessions = result.scalars().all()
 
+    # Batch load industry/position names to avoid N+1
+    industry_ids = {s.industry_id for s in sessions if s.industry_id}
+    position_ids = {s.position_id for s in sessions if s.position_id}
+    ind_map = {}
+    pos_map = {}
+    if industry_ids:
+        ind_result = await db.execute(select(Industry).where(Industry.id.in_(industry_ids)))
+        ind_map = {i.id: i.name for i in ind_result.scalars().all()}
+    if position_ids:
+        pos_result = await db.execute(select(Position).where(Position.id.in_(position_ids)))
+        pos_map = {p.id: p.name for p in pos_result.scalars().all()}
+
     items = []
     for s in sessions:
-        industry_name = ""
-        position_name = ""
-        if s.industry_id:
-            ind = await db.get(Industry, s.industry_id)
-            industry_name = ind.name if ind else ""
-        if s.position_id:
-            pos = await db.get(Position, s.position_id)
-            position_name = pos.name if pos else ""
         items.append({
             "session_uuid": s.uuid,
-            "industry": industry_name,
-            "position": position_name,
+            "industry": ind_map.get(s.industry_id, ""),
+            "position": pos_map.get(s.position_id, ""),
             "mode": s.mode_code,
             "status": s.status,
             "final_score": s.final_score,
@@ -313,5 +319,55 @@ async def get_active(auth: tuple = Depends(get_current_user)):
             "round": int(state_data.get("round", "0")),
             "started_at": state_data.get("started_at"),
             "stream_url": f"/api/interview/{session_uuid}/stream",
+        },
+    }
+
+
+@router.get("/stats")
+async def interview_stats(
+    limit: int = Query(20, ge=1, le=50),
+    auth: tuple = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """最近 N 次面试的分数趋势"""
+    user, _ = auth
+
+    result = await db.execute(
+        select(
+            InterviewSession.uuid,
+            InterviewSession.final_score,
+            InterviewSession.mode_code,
+            InterviewSession.started_at,
+        )
+        .where(
+            InterviewSession.user_id == user.id,
+            InterviewSession.status == "completed",
+            InterviewSession.final_score.isnot(None),
+        )
+        .order_by(desc(InterviewSession.started_at))
+        .limit(limit)
+    )
+    rows = result.all()
+
+    items = [
+        {
+            "session_uuid": r.uuid,
+            "score": r.final_score,
+            "mode": r.mode_code,
+            "date": r.started_at.isoformat() if r.started_at else None,
+        }
+        for r in reversed(rows)
+    ]
+
+    scores = [r.final_score for r in rows if r.final_score]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+
+    return {
+        "code": 0,
+        "data": {
+            "items": items,
+            "total_completed": len(rows),
+            "avg_score": avg_score,
+            "best_score": max(scores) if scores else 0,
         },
     }

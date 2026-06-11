@@ -32,3 +32,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# 生产环境安全检查
+if not settings.DEBUG and settings.JWT_SECRET == "change-me-in-production":
+    raise RuntimeError("JWT_SECRET must be set in production. Check your .env file.")
