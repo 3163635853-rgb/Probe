@@ -26,6 +26,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Probe — AI 面试官",
   description: "AI 智能体驱动的面试训练平台，助你拿下心仪 Offer",
+  openGraph: {
+    title: "Probe — AI 面试官",
+    description: "AI 智能体全程模拟真实面试，实时追问、即时评分、精准报告",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Probe — AI 面试官",
+    description: "AI 智能体全程模拟真实面试，实时追问、即时评分、精准报告",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({
