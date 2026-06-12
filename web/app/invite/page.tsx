@@ -33,8 +33,8 @@ function InviteContent() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    fetchAPI<InviteInfo>("/invite/my-code").then(setInfo);
-    fetchAPI<InviteRecord[]>("/invite/records").then(setRecords);
+    fetchAPI<InviteInfo>("/invite/my-code").then(setInfo).catch(() => {});
+    fetchAPI<InviteRecord[]>("/invite/records").then(setRecords).catch(() => {});
   }, []);
 
   async function redeem() {

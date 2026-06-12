@@ -28,6 +28,7 @@ function PricingContent() {
   useEffect(() => {
     fetchAPI<Plan[]>("/payment/plans")
       .then(setPlans)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

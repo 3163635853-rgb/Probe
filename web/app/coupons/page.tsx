@@ -31,6 +31,7 @@ function CouponsContent() {
     setLoading(true);
     fetchAPI<Coupon[]>(`/coupon/mine?status=${filter}`)
       .then(setCoupons)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [filter]);
 

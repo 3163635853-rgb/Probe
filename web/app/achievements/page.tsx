@@ -29,6 +29,7 @@ function AchievementsContent() {
   useEffect(() => {
     fetchAPI<Achievement[]>("/achievement/list")
       .then(setAchievements)
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 

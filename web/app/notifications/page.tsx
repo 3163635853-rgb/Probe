@@ -30,6 +30,7 @@ function NotificationsContent() {
   useEffect(() => {
     fetchAPI<PaginatedData<Notification>>("/notification/list?page=1&page_size=50")
       .then((data) => setItems(data.items))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
