@@ -47,6 +47,21 @@ export async function fetchAPI<T>(
     throw new ApiError(40001, "登录已过期，请重新登录");
   }
 
+  // 非 2xx 状态码处理
+  if (!res.ok) {
+    let json: any;
+    try {
+      json = await res.json();
+    } catch {
+      throw new ApiError(res.status, `请求失败 (${res.status})`);
+    }
+    throw new ApiError(
+      json.code || res.status,
+      json.message || json.detail || `请求失败 (${res.status})`,
+      json.detail
+    );
+  }
+
   const json: ApiResponse<T> = await res.json();
 
   if (json.code !== 0) {

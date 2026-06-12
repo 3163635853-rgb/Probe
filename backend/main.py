@@ -34,7 +34,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 
-# CORS
+# Middleware（Starlette 栈：后 add 的先执行）
+# RateLimitMiddleware 先注册 → 后执行
+app.add_middleware(RateLimitMiddleware)
+
+# CORSMiddleware 后注册 → 先执行（处理 preflight OPTIONS）
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:3001", "http://192.168.11.118:3000"],
@@ -43,9 +47,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-New-Token"],
 )
-
-# Middleware
-app.add_middleware(RateLimitMiddleware)
 
 # Routers
 app.include_router(auth_router)
