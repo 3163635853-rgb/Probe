@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 from sqlalchemy import text
 
@@ -67,6 +69,13 @@ app.include_router(coupon_router)
 app.include_router(achievement_router)
 app.include_router(share_router)
 app.include_router(file_router)
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if isinstance(exc.detail, dict):
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+    return JSONResponse(status_code=exc.status_code, content={"code": exc.status_code, "message": exc.detail})
 
 
 @app.get("/health")

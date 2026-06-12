@@ -194,17 +194,17 @@ function ReportContent() {
                 </div>
                 <div>
                   <p className="text-muted-foreground mb-1">AI 点评</p>
-                  {r.evaluation.strengths.length > 0 && (
+                  {r.evaluation?.strengths?.length > 0 && (
                     <p className="text-success flex items-center gap-1">
                       <CheckCircle className="w-3.5 h-3.5 shrink-0" /> {r.evaluation.strengths.join("；")}
                     </p>
                   )}
-                  {r.evaluation.weaknesses.length > 0 && (
+                  {r.evaluation?.weaknesses?.length > 0 && (
                     <p className="text-destructive flex items-center gap-1">
                       <XCircle className="w-3.5 h-3.5 shrink-0" /> {r.evaluation.weaknesses.join("；")}
                     </p>
                   )}
-                  {r.evaluation.suggestion && (
+                  {r.evaluation?.suggestion && (
                     <p className="mt-1 flex items-center gap-1">
                       <Lightbulb className="w-3.5 h-3.5 shrink-0 text-primary" /> {r.evaluation.suggestion}
                     </p>

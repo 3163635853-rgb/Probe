@@ -378,6 +378,7 @@ function ScoreToast({ score }: { score: { round: number; score: number; brief: s
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    setVisible(true);
     const t = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(t);
   }, [score]);
