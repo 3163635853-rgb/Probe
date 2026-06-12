@@ -82,6 +82,8 @@ async def save_context(session_id: str, ctx: AgentContext):
         "difficulty": ctx.difficulty,
         "mode_code": ctx.mode_code,
         "jd_text": ctx.jd_text,
+        "industry_id": ctx.industry_id,
+        "position_id": ctx.position_id,
     }
     await redis_client.set(key, json.dumps(data, ensure_ascii=False), ex=SESSION_TTL)
 

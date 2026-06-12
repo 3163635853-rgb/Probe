@@ -10,6 +10,7 @@ import { createSSE, type SSEConnectionState } from "@/lib/sse";
 import type { SSEQuestionEvent, SSEStatusEvent } from "@/lib/types";
 import { Brain, Send, SkipForward, X, Wifi, WifiOff } from "lucide-react";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { useToast } from "@/components/Toast";
 
 // State
 interface Message {
@@ -104,8 +105,10 @@ export default function InterviewPage() {
 function InterviewSession() {
   const { uuid } = useParams<{ uuid: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const reportUrlRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -173,28 +176,35 @@ function InterviewSession() {
         method: "POST",
         body: JSON.stringify({ content, type: "text" }),
       });
-    } catch {
-      // SSE 会推送下一步，网络错误时静默
+    } catch (e: any) {
+      toast.error(e.message || "发送失败，请重试");
     }
-  }, [uuid]);
+  }, [uuid, toast]);
 
   const skipQuestion = useCallback(async () => {
     dispatch({ type: "SET_INPUT_DISABLED", value: true });
     try {
       await fetchAPI(`/interview/${uuid}/skip`, { method: "POST" });
-    } catch {
+    } catch (e: any) {
       dispatch({ type: "SET_INPUT_DISABLED", value: false });
+      toast.error(e.message || "跳过失败");
     }
-  }, [uuid]);
+  }, [uuid, toast]);
 
   const endInterview = useCallback(async () => {
-    if (!confirm("确定要结束面试吗？")) return;
+    if (!confirmEnd) {
+      setConfirmEnd(true);
+      toast.warning("再次点击确认结束面试");
+      setTimeout(() => setConfirmEnd(false), 3000);
+      return;
+    }
     try {
       await fetchAPI(`/interview/${uuid}/end`, { method: "POST" });
-    } catch {
-      // 静默
+      toast.info("面试正在结束...");
+    } catch (e: any) {
+      toast.error(e.message || "结束面试失败");
     }
-  }, [uuid]);
+  }, [uuid, confirmEnd, toast]);
 
   const progress = state.status?.progress || "0/10";
   const [current, total] = progress.split("/").map(Number);
@@ -228,9 +238,13 @@ function InterviewSession() {
           ) : (
             <button
               onClick={endInterview}
-              className="group rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
+              className={`group rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                confirmEnd
+                  ? "border-destructive bg-destructive text-destructive-foreground"
+                  : "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
+              }`}
             >
-              <X className="w-4 h-4 inline mr-1" />结束
+              <X className="w-4 h-4 inline mr-1" />{confirmEnd ? "确认结束" : "结束"}
             </button>
           )}
         </div>
