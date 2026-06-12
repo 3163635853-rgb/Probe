@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Ticket } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { fetchAPI } from "@/lib/api";
+import { useFetch } from "@/lib/hooks";
 
 interface Coupon {
   id: number;
@@ -23,17 +23,10 @@ export default function CouponsPage() {
 }
 
 function CouponsContent() {
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [filter, setFilter] = useState<"unused" | "all">("unused");
-  const [loading, setLoading] = useState(true);
+  const { data: coupons, loading } = useFetch<Coupon[]>(`/coupon/mine?status=${filter}`, [filter]);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchAPI<Coupon[]>(`/coupon/mine?status=${filter}`)
-      .then(setCoupons)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [filter]);
+  const items = coupons || [];
 
   return (
     <main className="flex-1 overflow-y-auto">
@@ -59,14 +52,14 @@ function CouponsContent() {
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           </div>
-        ) : coupons.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-16">
             <Ticket className="w-12 h-12 text-muted-foreground mx-auto" />
             <p className="mt-3 text-muted-foreground">暂无优惠券</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {coupons.map((c) => (
+            {items.map((c) => (
               <div
                 key={c.id}
                 className={`rounded-xl border p-4 flex items-center gap-4 ${c.status === "unused" ? "border-primary/30 bg-card" : "border-border bg-card opacity-60"}`}

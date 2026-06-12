@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copy, Gift, Users } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
+import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 interface InviteInfo {
   code: string;
@@ -27,15 +29,10 @@ export default function InvitePage() {
 }
 
 function InviteContent() {
-  const [info, setInfo] = useState<InviteInfo | null>(null);
-  const [records, setRecords] = useState<InviteRecord[]>([]);
+  const { data: info } = useFetch<InviteInfo>("/invite/my-code");
+  const { data: records } = useFetch<InviteRecord[]>("/invite/records");
   const [redeemCode, setRedeemCode] = useState("");
-  const [msg, setMsg] = useState("");
-
-  useEffect(() => {
-    fetchAPI<InviteInfo>("/invite/my-code").then(setInfo).catch(() => {});
-    fetchAPI<InviteRecord[]>("/invite/records").then(setRecords).catch(() => {});
-  }, []);
+  const toast = useToast();
 
   async function redeem() {
     if (!redeemCode.trim()) return;
@@ -44,10 +41,10 @@ function InviteContent() {
         method: "POST",
         body: JSON.stringify({ code: redeemCode.trim() }),
       });
-      setMsg("兑换成功");
+      toast.success("兑换成功");
       setRedeemCode("");
     } catch (e: any) {
-      setMsg(e.message || "兑换失败");
+      toast.error(e.message || "兑换失败");
     }
   }
 
@@ -64,7 +61,10 @@ function InviteContent() {
                 {info.code}
               </code>
               <button
-                onClick={() => { navigator.clipboard.writeText(info.code); }}
+                onClick={() => {
+                  navigator.clipboard.writeText(info.code);
+                  toast.success("已复制");
+                }}
                 className="rounded-lg border border-border p-3 hover:bg-secondary transition-colors"
                 title="复制"
               >
@@ -98,11 +98,10 @@ function InviteContent() {
               兑换
             </button>
           </div>
-          {msg && <p className="text-sm text-primary">{msg}</p>}
         </div>
 
         {/* 邀请记录 */}
-        {records.length > 0 && (
+        {records && records.length > 0 && (
           <div className="space-y-2">
             <h2 className="font-semibold">邀请记录</h2>
             {records.map((r, i) => (

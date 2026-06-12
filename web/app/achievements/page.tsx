@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Trophy, Lock } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { fetchAPI } from "@/lib/api";
+import { useFetch } from "@/lib/hooks";
 
 interface Achievement {
   code: string;
@@ -23,17 +22,10 @@ export default function AchievementsPage() {
 }
 
 function AchievementsContent() {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: achievements, loading } = useFetch<Achievement[]>("/achievement/list");
 
-  useEffect(() => {
-    fetchAPI<Achievement[]>("/achievement/list")
-      .then(setAchievements)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  const unlocked = achievements.filter((a) => a.achieved).length;
+  const items = achievements || [];
+  const unlocked = items.filter((a) => a.achieved).length;
 
   if (loading) {
     return (
@@ -49,12 +41,12 @@ function AchievementsContent() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">成就</h1>
           <span className="text-sm text-muted-foreground">
-            已解锁 {unlocked}/{achievements.length}
+            已解锁 {unlocked}/{items.length}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {achievements.map((a) => (
+          {items.map((a) => (
             <div
               key={a.code}
               className={`rounded-xl border p-5 flex items-start gap-4 transition-colors ${a.achieved ? "border-primary/30 bg-card" : "border-border bg-card opacity-50"}`}

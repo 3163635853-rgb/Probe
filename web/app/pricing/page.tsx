@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Check, Crown } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
+import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 interface Plan {
   product_type: string;
@@ -22,15 +23,8 @@ export default function PricingPage() {
 }
 
 function PricingContent() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAPI<Plan[]>("/payment/plans")
-      .then(setPlans)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: plans, loading } = useFetch<Plan[]>("/payment/plans");
+  const toast = useToast();
 
   async function handlePurchase(productType: string) {
     try {
@@ -38,18 +32,18 @@ function PricingContent() {
         method: "POST",
         body: JSON.stringify({ product_type: productType }),
       });
-      // 调用微信 JSAPI 支付
       if (data.wx_pay_params && typeof WeixinJSBridge !== "undefined") {
         WeixinJSBridge.invoke("getBrandWCPayRequest", data.wx_pay_params, (res: any) => {
           if (res.err_msg === "get_brand_wcpay_request:ok") {
+            toast.success("支付成功");
             window.location.reload();
           }
         });
       } else {
-        alert("请在微信中完成支付");
+        toast.info("请在微信中完成支付");
       }
     } catch (e: any) {
-      alert(e.message || "创建订单失败");
+      toast.error(e.message || "创建订单失败");
     }
   }
 
@@ -61,6 +55,8 @@ function PricingContent() {
     );
   }
 
+  const items = plans || [];
+
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-4 py-12 space-y-8">
@@ -71,7 +67,7 @@ function PricingContent() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {plans.map((plan) => {
+          {items.map((plan) => {
             const isPopular = plan.product_type === "monthly";
             return (
               <div
