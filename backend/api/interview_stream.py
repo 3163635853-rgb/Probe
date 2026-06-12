@@ -102,6 +102,14 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     # 加载上下文
     ctx_data = await load_context(session_uuid)
     if not ctx_data:
+        seq += 1
+        yield await _push_event(session_uuid, seq, "error", {
+            "code": "SESSION_EXPIRED",
+            "message": "面试会话已过期，请重新开始",
+            "retry": False,
+        })
+        seq += 1
+        yield await _push_event(session_uuid, seq, "done", {})
         return
 
     difficulty = ctx_data.get("difficulty", 3)
