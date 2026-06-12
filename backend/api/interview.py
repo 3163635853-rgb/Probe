@@ -167,10 +167,21 @@ async def end_interview(
     if not session:
         raise HTTPException(status_code=404, detail={"code": 40401, "message": "面试不存在或已结束"})
 
-    # 触发结束
+    # 通知 Agent 循环结束（如果它还在 _wait_for_answer）
     await redis_client.set(f"answer:{uuid}", "__END__", ex=300)
 
-    return {"code": 0, "data": {"status": "reporting"}}
+    # 直接更新 DB 状态，不依赖 Agent 循环处理
+    from datetime import datetime, timezone
+    session.status = "completed"
+    session.ended_at = datetime.now(timezone.utc)
+    if session.started_at:
+        session.duration_sec = int((session.ended_at - session.started_at).total_seconds())
+    await db.commit()
+
+    # 清理 active session
+    await redis_client.delete(f"active_session:{user.id}")
+
+    return {"code": 0, "data": {"status": "completed"}}
 
 
 @router.get("/{uuid}/report")
