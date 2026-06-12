@@ -63,7 +63,7 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
 
     async def event_generator():
         seq = last_event_id
-        last_activity = time.time()
+        last_heartbeat = time.time()
 
         # 重连恢复: 从 Redis sse_log 重放
         if last_event_id > 0:
@@ -78,11 +78,22 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
         seq += 1
         yield await _push_event(uuid, seq, "connected", {"session_uuid": uuid, "resumed_from": last_event_id})
 
-        # 运行 Agent 循环
-        async for event_str in _run_agent_loop(uuid, user_id, session.id, seq):
-            yield event_str
-            last_activity = time.time()
-            seq += 1
+        # 运行 Agent 循环，穿插心跳
+        agent_gen = _run_agent_loop(uuid, user_id, session.id, seq)
+        try:
+            while True:
+                try:
+                    event_str = await asyncio.wait_for(agent_gen.__anext__(), timeout=HEARTBEAT_INTERVAL)
+                    yield event_str
+                    seq += 1
+                    last_heartbeat = time.time()
+                except asyncio.TimeoutError:
+                    # Agent 在等用户回答，发心跳保活
+                    yield ":ping\n\n"
+                except StopAsyncIteration:
+                    break
+        finally:
+            await agent_gen.aclose()
 
     return StreamingResponse(
         event_generator(),
@@ -412,11 +423,10 @@ JD参考: {jd_text[:200] if jd_text else '无'}
     return await chat(messages, CHAT_PARAMS), source
 
 
-async def _wait_for_answer(session_uuid: str, timeout: int = 900) -> str:
-    """轮询等待用户回答，timeout=15min，带心跳和 reminder"""
+async def _wait_for_answer(session_uuid: str, timeout: int = 900):
+    """轮询等待用户回答，timeout 秒。"""
     key = f"answer:{session_uuid}"
     start = time.time()
-    last_ping = time.time()
     reminder_sent = False
 
     while time.time() - start < timeout:
@@ -426,15 +436,10 @@ async def _wait_for_answer(session_uuid: str, timeout: int = 900) -> str:
 
         elapsed = time.time() - start
 
-        # 15s 心跳
-        if time.time() - last_ping >= HEARTBEAT_INTERVAL:
-            await redis_client.rpush(f"sse_log:{session_uuid}", f"0|ping|")
-            last_ping = time.time()
-
         # 5min idle → reminder
         if not reminder_sent and elapsed >= IDLE_TIMEOUT:
             reminder_sent = True
             return "__REMINDER__"
 
         await asyncio.sleep(1)
-    return "__END__"  # 超时自动结束
+    return "__END__"

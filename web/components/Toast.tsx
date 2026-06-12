@@ -48,7 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       {/* Toast 容器 */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-2 pointer-events-none">
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={() => remove(t.id)} />
         ))}
@@ -82,7 +82,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm animate-slide-in-right min-w-[280px] max-w-[380px] ${STYLE_MAP[toast.type]}`}
+      className={`pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm animate-slide-in-down min-w-[280px] max-w-[380px] ${STYLE_MAP[toast.type]}`}
       role="alert"
     >
       <Icon className="w-5 h-5 shrink-0" />
