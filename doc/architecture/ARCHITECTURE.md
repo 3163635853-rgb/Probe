@@ -225,9 +225,10 @@ Agent 决策前:
 | Web | Next.js 14 + Tailwind | SSR、快速开发 |
 | App | React Native (Phase 2) | 跨端 |
 | 小程序 | 微信原生 (Phase 3) | 国内入口 |
-| 语音 | Whisper + Edge TTS | 免费本地 |
+| 语音 | Whisper API + Edge TTS | ASR + 免费 TTS |
 | 网关 | Caddy 2 | 自动 HTTPS |
 | 部署 | DO + Docker Compose | 简单低成本 |
+| 包管理 | uv | 快、lockfile 确定性 |
 | ORM | SQLAlchemy 2.0 async | 类型安全 |
 
 ---

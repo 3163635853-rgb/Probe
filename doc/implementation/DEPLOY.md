@@ -42,6 +42,8 @@ services:
       - DATABASE_URL=mysql+asyncmy://probe:${MYSQL_PASSWORD}@mysql:3306/probe
       - REDIS_URL=redis://redis:6379/0
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_BASE_URL=https://token-plan-cn.xiaomimimo.com/v1
+      - DEEPSEEK_MODEL=mimo-v2-pro
       - JWT_SECRET=${JWT_SECRET}
       - WX_APP_ID=${WX_APP_ID}
       - WX_APP_SECRET=${WX_APP_SECRET}

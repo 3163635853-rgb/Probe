@@ -206,6 +206,13 @@ function InterviewSession() {
     try {
       await fetchAPI(`/interview/${uuid}/end`, { method: "POST" });
       toast.info("面试正在结束...");
+      // 如果 5s 内没收到 SSE report 事件，直接跳报告页
+      setTimeout(() => {
+        if (!reportUrlRef.current) {
+          reportUrlRef.current = `/interview/${uuid}/report`;
+          setShowFeedback(true);
+        }
+      }, 5000);
     } catch (e: any) {
       toast.error(e.message || "结束面试失败");
     }

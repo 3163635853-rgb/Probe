@@ -11,6 +11,7 @@ import type { PaginatedData } from "@/lib/types";
 interface Notification {
   id: number;
   title: string;
+  content?: string;
   type: string;
   is_read: boolean;
   related_url: string | null;
@@ -91,6 +92,7 @@ function NotificationsContent() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className={`text-sm ${isRead(n) ? "" : "font-medium"}`}>{n.title}</p>
+                    {n.content && <p className="text-xs text-muted-foreground mt-0.5">{n.content}</p>}
                     <p className="text-xs text-muted-foreground mt-1">
                       {new Date(n.created_at).toLocaleDateString("zh-CN")}
                     </p>

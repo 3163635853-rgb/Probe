@@ -83,15 +83,14 @@ async def start_interview(
     )
     await save_context(session_uuid, ctx)
 
-    token_str = ""
-    # 用于 SSE 连接
-    auth_header = ""  # 前端用已有 token 连接
+    from utils.jwt import create_token as _create_token
+    sse_token, _ = _create_token(user.id, user.uuid)
 
     return {
         "code": 0,
         "data": {
             "session_uuid": session_uuid,
-            "stream_url": f"/api/interview/{session_uuid}/stream",
+            "stream_url": f"/api/interview/{session_uuid}/stream?token={sse_token}",
         },
     }
 
@@ -321,6 +320,9 @@ async def get_active(auth: tuple = Depends(get_current_user)):
     if not state_data:
         return {"code": 0, "data": None}
 
+    from utils.jwt import create_token as _create_token
+    sse_token, _ = _create_token(user.id, user.uuid)
+
     return {
         "code": 0,
         "data": {
@@ -328,7 +330,7 @@ async def get_active(auth: tuple = Depends(get_current_user)):
             "state": state_data.get("state", "IDLE"),
             "round": int(state_data.get("round", "0")),
             "started_at": state_data.get("started_at"),
-            "stream_url": f"/api/interview/{session_uuid}/stream",
+            "stream_url": f"/api/interview/{session_uuid}/stream?token={sse_token}",
         },
     }
 
