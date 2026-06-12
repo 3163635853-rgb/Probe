@@ -231,7 +231,7 @@ function InterviewSession() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ConnectionBadge state={state.connection} />
           {state.done ? (
             <Link
@@ -241,16 +241,25 @@ function InterviewSession() {
               返回
             </Link>
           ) : (
-            <button
-              onClick={endInterview}
-              className={`group rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                confirmEndUI
-                  ? "border-destructive bg-destructive text-destructive-foreground"
-                  : "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
-              }`}
-            >
-              <X className="w-4 h-4 inline mr-1" />{confirmEndUI ? "确认结束" : "结束"}
-            </button>
+            <>
+              <button
+                onClick={endInterview}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                  confirmEndUI
+                    ? "border-destructive bg-destructive text-destructive-foreground"
+                    : "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
+                }`}
+              >
+                <X className="w-4 h-4 inline mr-1" />{confirmEndUI ? "确认结束" : "结束"}
+              </button>
+              <Link
+                href="/interview/setup"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                onClick={() => sseRef.current?.close()}
+              >
+                离开
+              </Link>
+            </>
           )}
         </div>
       </header>
