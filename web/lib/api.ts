@@ -14,6 +14,12 @@ export class ApiError extends Error {
   }
 }
 
+interface ErrorBody {
+  code?: number;
+  message?: string;
+  detail?: string;
+}
+
 export async function fetchAPI<T>(
   path: string,
   options: RequestInit = {}
@@ -49,20 +55,20 @@ export async function fetchAPI<T>(
 
   // 非 2xx 状态码处理
   if (!res.ok) {
-    let json: any;
+    let body: ErrorBody = {};
     try {
-      json = await res.json();
+      body = await res.json();
     } catch {
       throw new ApiError(res.status, `请求失败 (${res.status})`);
     }
-    const message = json.message || json.detail || `请求失败 (${res.status})`;
-    throw new ApiError(json.code || res.status, message, json.detail);
+    const message = body.message || body.detail || `请求失败 (${res.status})`;
+    throw new ApiError(body.code || res.status, message, body.detail);
   }
 
   const json: ApiResponse<T> = await res.json();
 
   if (json.code !== 0) {
-    throw new ApiError(json.code, json.message, (json as any).detail);
+    throw new ApiError(json.code, json.message, json.detail);
   }
 
   return json.data;

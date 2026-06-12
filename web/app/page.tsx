@@ -120,10 +120,10 @@ export default function HomePage() {
           </ScrollReveal>
           <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { icon: Brain, title: "自主决策的 AI Agent", desc: "面试官 Agent 自主规划面试流程，根据你的回答实时调整策略：追问薄弱点、跳过已掌握的领域、适时给出引导提示。", accent: "from-amber-500/10 to-orange-500/5" },
-              { icon: Zap, title: "逐题实时评分", desc: "不用等面试结束。每道题回答完毕，AI 即刻从多维度打分并给出简评，帮你实时感知自己的表现。", accent: "from-emerald-500/10 to-teal-500/5" },
-              { icon: BarChart3, title: "五维深度报告", desc: "专业知识、逻辑表达、问题解决、沟通能力、抗压能力 — 雷达图 + 逐题点评 + 改进建议，一份报告看清全貌。", accent: "from-blue-500/10 to-indigo-500/5" },
-              { icon: Target, title: "越练越懂你", desc: "记忆系统记住你的历史表现，下次面试自动强化薄弱环节，难度随能力动态升级。每次都有新挑战。", accent: "from-purple-500/10 to-pink-500/5" },
+              { icon: Brain, title: "自主决策的 AI Agent", desc: "面试官 Agent 自主规划面试流程，根据你的回答实时调整策略：追问薄弱点、跳过已掌握的领域、适时给出引导提示。", accent: "from-primary/10 to-primary/5" },
+              { icon: Zap, title: "逐题实时评分", desc: "不用等面试结束。每道题回答完毕，AI 即刻从多维度打分并给出简评，帮你实时感知自己的表现。", accent: "from-success/10 to-success/5" },
+              { icon: BarChart3, title: "五维深度报告", desc: "专业知识、逻辑表达、问题解决、沟通能力、抗压能力 — 雷达图 + 逐题点评 + 改进建议，一份报告看清全貌。", accent: "from-primary/10 to-primary/5" },
+              { icon: Target, title: "越练越懂你", desc: "记忆系统记住你的历史表现，下次面试自动强化薄弱环节，难度随能力动态升级。每次都有新挑战。", accent: "from-success/10 to-success/5" },
             ].map((feat, i) => (
               <ScrollReveal key={feat.title} delay={i * 100}>
                 <div className="group relative overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10 hover:border-primary/20 hover:shadow-lg transition-all duration-500">
@@ -154,9 +154,9 @@ export default function HomePage() {
             <div className="rounded-3xl border border-border bg-card shadow-xl overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-secondary/50">
                 <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400/60" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
-                  <div className="w-3 h-3 rounded-full bg-green-400/60" />
+                  <div className="w-3 h-3 rounded-full bg-destructive/50" />
+                  <div className="w-3 h-3 rounded-full bg-primary/50" />
+                  <div className="w-3 h-3 rounded-full bg-success/50" />
                 </div>
                 <div className="flex-1 flex justify-center">
                   <div className="px-4 py-1 rounded-md bg-background/80 text-xs text-muted-foreground border border-border/50">probe.app/report</div>

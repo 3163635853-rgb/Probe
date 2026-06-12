@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Monitor, Landmark, Stethoscope, GraduationCap, ShoppingBag, Factory, Briefcase } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -198,7 +199,7 @@ function SetupFlow() {
                   onClick={() => selectIndustry(ind)}
                   className="rounded-xl border border-border p-4 text-left hover:border-primary hover:bg-primary/5 transition-colors"
                 >
-                  <span className="text-2xl">{ind.icon}</span>
+                  <IndustryIcon name={ind.name} />
                   <p className="mt-2 font-medium">{ind.name}</p>
                 </button>
               ))}
@@ -277,7 +278,7 @@ function SetupFlow() {
               </button>
               <button
                 onClick={() => setStep("confirm")}
-                className="flex-1 rounded-full bg-primary py-3 text-white font-medium hover:bg-primary-hover transition-colors"
+                className="flex-1 rounded-full bg-primary py-3 text-primary-foreground font-medium hover:bg-primary-hover transition-colors"
               >
                 下一步
               </button>
@@ -297,7 +298,7 @@ function SetupFlow() {
             <button
               onClick={startInterview}
               disabled={loading || (quota !== null && !quota.can_start_interview)}
-              className="mt-6 w-full rounded-full bg-primary py-3 text-white font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
+              className="mt-6 w-full rounded-full bg-primary py-3 text-primary-foreground font-medium hover:bg-primary-hover transition-colors disabled:opacity-50"
             >
               {loading ? "创建中..." : "开始面试"}
             </button>
@@ -331,4 +332,18 @@ function StepCard({
       {children}
     </div>
   );
+}
+
+const INDUSTRY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "互联网": Monitor,
+  "金融": Landmark,
+  "医疗": Stethoscope,
+  "教育": GraduationCap,
+  "零售": ShoppingBag,
+  "制造": Factory,
+};
+
+function IndustryIcon({ name }: { name: string }) {
+  const Icon = INDUSTRY_ICONS[name] || Briefcase;
+  return <Icon className="w-7 h-7 text-primary" />;
 }

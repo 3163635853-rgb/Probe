@@ -1,3 +1,4 @@
+import json
 from services.llm import chat_json, EVAL_PARAMS
 from agent.prompts import REPORTER_PROMPT
 
@@ -17,7 +18,7 @@ async def report(rounds: list[dict], mode_code: str, difficulty: int) -> dict:
     user_msg = f"""面试模式: {mode_code}
 难度等级: {difficulty}/5
 轮次数据:
-{__import__('json').dumps(rounds_summary, ensure_ascii=False, indent=2)}
+{json.dumps(rounds_summary, ensure_ascii=False, indent=2)}
 
 请生成面试报告。"""
 

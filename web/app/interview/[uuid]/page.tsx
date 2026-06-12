@@ -467,9 +467,9 @@ function TypeWriter({ text }: { text: string }) {
 // 连接状态标记
 function ConnectionBadge({ state }: { state: SSEConnectionState }) {
   const config = {
-    connecting: { icon: Wifi, color: "text-yellow-500", label: "连接中" },
+    connecting: { icon: Wifi, color: "text-primary", label: "连接中" },
     connected: { icon: Wifi, color: "text-success", label: "已连接" },
-    reconnecting: { icon: Wifi, color: "text-yellow-500", label: "重连中" },
+    reconnecting: { icon: Wifi, color: "text-primary", label: "重连中" },
     closed: { icon: WifiOff, color: "text-muted-foreground", label: "已断开" },
   };
   const { icon: Icon, color, label } = config[state];

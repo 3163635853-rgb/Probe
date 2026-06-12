@@ -88,9 +88,17 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
                     seq += 1
                     last_heartbeat = time.time()
                 except asyncio.TimeoutError:
-                    # Agent 在等用户回答，发心跳保活
                     yield ":ping\n\n"
                 except StopAsyncIteration:
+                    break
+                except Exception as e:
+                    logger.error(f"Agent loop error: {e}")
+                    seq += 1
+                    yield await _push_event(uuid, seq, "error", {
+                        "code": "INTERNAL_ERROR",
+                        "message": "服务出现异常，请稍后重试",
+                        "retry": True,
+                    })
                     break
         finally:
             await agent_gen.aclose()
@@ -212,11 +220,15 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         seq += 1
         yield await _push_event(session_uuid, seq, "thinking", {"content": "正在分析你的回答..."})
 
-        eval_result = await evaluate(
-            question=question_text,
-            answer=answer_text,
-            difficulty=difficulty,
-        )
+        try:
+            eval_result = await evaluate(
+                question=question_text,
+                answer=answer_text,
+                difficulty=difficulty,
+            )
+        except Exception as e:
+            logger.warning(f"Evaluation failed: {e}")
+            eval_result = {"score": 5, "dimension": "专业知识", "strengths": [], "weaknesses": ["评估异常"], "suggestion": ""}
         score = eval_result.get("score", 0)
 
         seq += 1
@@ -259,12 +271,17 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         # 追问决策
         await save_state(session_uuid, AgentState.DECIDING, current_round)
         if not skipped and score < 8:
-            probe_result = await probe(
-                question=question_text,
-                answer=answer_text,
-                score=score,
-                evaluation=eval_result,
-            )
+            try:
+                probe_result = await probe(
+                    question=question_text,
+                    answer=answer_text,
+                    score=score,
+                    evaluation=eval_result,
+                )
+            except Exception as e:
+                logger.warning(f"Probe failed: {e}")
+                probe_result = {"should_probe": False}
+
             if probe_result.get("should_probe"):
                 probe_q = probe_result.get("question", "")
                 if probe_q:
@@ -281,7 +298,6 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                     if probe_answer == "__END__":
                         break
                     if probe_answer != "__SKIP__":
-                        # 评估追问回答（不单独记录分数，合并到本轮）
                         pass
 
         # 保存上下文

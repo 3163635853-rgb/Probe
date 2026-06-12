@@ -28,12 +28,12 @@ function PricingContent() {
 
   async function handlePurchase(productType: string) {
     try {
-      const data = await fetchAPI<{ order_uuid: string; wx_pay_params: any }>("/payment/create", {
+      const data = await fetchAPI<{ order_uuid: string; wx_pay_params: WxPayParams | null }>("/payment/create", {
         method: "POST",
         body: JSON.stringify({ product_type: productType }),
       });
-      if (data.wx_pay_params && typeof WeixinJSBridge !== "undefined") {
-        WeixinJSBridge.invoke("getBrandWCPayRequest", data.wx_pay_params, (res: any) => {
+      if (data.wx_pay_params && typeof WeixinJSBridge !== "undefined" && WeixinJSBridge) {
+        WeixinJSBridge.invoke("getBrandWCPayRequest", data.wx_pay_params, (res: WxPayResult) => {
           if (res.err_msg === "get_brand_wcpay_request:ok") {
             toast.success("支付成功");
             window.location.reload();
@@ -42,8 +42,8 @@ function PricingContent() {
       } else {
         toast.info("请在微信中完成支付");
       }
-    } catch (e: any) {
-      toast.error(e.message || "创建订单失败");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "创建订单失败");
     }
   }
 
@@ -107,7 +107,24 @@ function PricingContent() {
   );
 }
 
+interface WxPayParams {
+  appId: string;
+  timeStamp: string;
+  nonceStr: string;
+  package: string;
+  signType: string;
+  paySign: string;
+}
+
+interface WxPayResult {
+  err_msg: string;
+}
+
+interface WeixinJSBridgeInterface {
+  invoke(api: string, params: WxPayParams, callback: (res: WxPayResult) => void): void;
+}
+
 declare global {
-  interface Window { WeixinJSBridge: any; }
-  const WeixinJSBridge: any;
+  interface Window { WeixinJSBridge?: WeixinJSBridgeInterface; }
+  const WeixinJSBridge: WeixinJSBridgeInterface | undefined;
 }
