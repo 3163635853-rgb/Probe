@@ -17,9 +17,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_DAYS: int = 7
 
-    # DeepSeek
+    # LLM (OpenAI 兼容接口)
     DEEPSEEK_API_KEY: str = ""
-    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
+    DEEPSEEK_BASE_URL: str = "https://token-plan-cn.xiaomimimo.com/v1"
+    DEEPSEEK_MODEL: str = "mimo-v2-pro"
 
     # WeChat
     WX_APP_ID: str = ""

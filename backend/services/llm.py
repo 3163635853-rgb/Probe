@@ -14,9 +14,9 @@ client = AsyncOpenAI(
 )
 
 # LLM 调用参数预设
-CHAT_PARAMS = {"model": "deepseek-chat", "temperature": 0.7, "max_tokens": 1024}
-EVAL_PARAMS = {"model": "deepseek-chat", "temperature": 0.2, "max_tokens": 512}
-PLAN_PARAMS = {"model": "deepseek-chat", "temperature": 0.3, "max_tokens": 1024, "response_format": {"type": "json_object"}}
+CHAT_PARAMS = {"model": settings.DEEPSEEK_MODEL, "temperature": 0.7, "max_tokens": 1024}
+EVAL_PARAMS = {"model": settings.DEEPSEEK_MODEL, "temperature": 0.2, "max_tokens": 512}
+PLAN_PARAMS = {"model": settings.DEEPSEEK_MODEL, "temperature": 0.3, "max_tokens": 1024, "response_format": {"type": "json_object"}}
 
 # Token 计数（进程级累计）
 _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_calls": 0}

@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearToken();
     setState({ user: null, loading: false, logged: false });
+    window.location.href = "/";
   }, []);
 
   return (

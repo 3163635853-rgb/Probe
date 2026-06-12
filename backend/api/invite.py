@@ -13,6 +13,7 @@ from config import settings
 router = APIRouter(prefix="/api/invite", tags=["invite"])
 
 REWARD_QUOTA = 3  # 每邀请1人，双方各得3次
+MAX_INVITE_REWARD = 30  # 邀请者最多累计奖励30次
 
 
 @router.get("/my-code")
@@ -107,10 +108,10 @@ async def redeem_invite(
     await db.commit()
 
     # 发奖: 给双方加配额（DB 事务成功后才操作 Redis）
-    from datetime import datetime, timezone
+    from datetime import datetime, timezone  # 延迟导入避免循环
     month = datetime.now(timezone.utc).strftime("%Y-%m")
     await redis_client.incrby(f"quota:{user.id}:{month}", REWARD_QUOTA)
-    if invite.inviter_user_id:
+    if invite.inviter_user_id and invite.used_count <= MAX_INVITE_REWARD // REWARD_QUOTA:
         await redis_client.incrby(f"quota:{invite.inviter_user_id}:{month}", REWARD_QUOTA)
 
     return {

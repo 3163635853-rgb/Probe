@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
+import { PageTransition } from "./PageTransition";
 
 const NAV_ITEMS = [
   { href: "/interview/setup", label: "面试", icon: Home },
@@ -69,7 +70,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* 内容 */}
-      <div className="flex-1 flex flex-col">{children}</div>
+      <div className="flex-1 flex flex-col">
+        <PageTransition>{children}</PageTransition>
+      </div>
 
       {/* 移动端底部 Tab */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/90 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
