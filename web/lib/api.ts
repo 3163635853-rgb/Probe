@@ -55,11 +55,8 @@ export async function fetchAPI<T>(
     } catch {
       throw new ApiError(res.status, `请求失败 (${res.status})`);
     }
-    throw new ApiError(
-      json.code || res.status,
-      json.message || json.detail || `请求失败 (${res.status})`,
-      json.detail
-    );
+    const message = json.message || json.detail || `请求失败 (${res.status})`;
+    throw new ApiError(json.code || res.status, message, json.detail);
   }
 
   const json: ApiResponse<T> = await res.json();

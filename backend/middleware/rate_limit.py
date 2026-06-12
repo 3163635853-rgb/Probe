@@ -7,11 +7,11 @@ from utils.jwt import decode_token
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """30 req/min per user, 10 req/min per IP for unauthenticated"""
+    """Rate limiting: 60 req/min per user, 30 req/min per IP for unauthenticated"""
 
     async def dispatch(self, request: Request, call_next):
-        # Skip health check
-        if request.url.path == "/health":
+        # Skip health check and OPTIONS preflight
+        if request.url.path == "/health" or request.method == "OPTIONS":
             return await call_next(request)
 
         # Identify caller
@@ -21,13 +21,24 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             payload = decode_token(auth_header[7:])
             if payload:
                 key = f"rate:{payload['sub']}"
-                limit = 30
+                limit = 60
             else:
                 key = f"rate:ip:{client_host}"
-                limit = 10
+                limit = 30
         else:
-            key = f"rate:ip:{client_host}"
-            limit = 10
+            # SSE stream 的 token 在 query param 里
+            token = request.query_params.get("token")
+            if token:
+                payload = decode_token(token)
+                if payload:
+                    key = f"rate:{payload['sub']}"
+                    limit = 60
+                else:
+                    key = f"rate:ip:{client_host}"
+                    limit = 30
+            else:
+                key = f"rate:ip:{client_host}"
+                limit = 30
 
         try:
             current = await redis_client.incr(key)
