@@ -108,7 +108,8 @@ function InterviewSession() {
   const toast = useToast();
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [confirmEnd, setConfirmEnd] = useState(false);
+  const confirmEndRef = useRef(false);
+  const [confirmEndUI, setConfirmEndUI] = useState(false);
   const reportUrlRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -192,10 +193,14 @@ function InterviewSession() {
   }, [uuid, toast]);
 
   const endInterview = useCallback(async () => {
-    if (!confirmEnd) {
-      setConfirmEnd(true);
+    if (!confirmEndRef.current) {
+      confirmEndRef.current = true;
+      setConfirmEndUI(true);
       toast.warning("再次点击确认结束面试");
-      setTimeout(() => setConfirmEnd(false), 3000);
+      setTimeout(() => {
+        confirmEndRef.current = false;
+        setConfirmEndUI(false);
+      }, 3000);
       return;
     }
     try {
@@ -204,7 +209,7 @@ function InterviewSession() {
     } catch (e: any) {
       toast.error(e.message || "结束面试失败");
     }
-  }, [uuid, confirmEnd, toast]);
+  }, [uuid, toast]);
 
   const progress = state.status?.progress || "0/10";
   const [current, total] = progress.split("/").map(Number);
@@ -239,12 +244,12 @@ function InterviewSession() {
             <button
               onClick={endInterview}
               className={`group rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                confirmEnd
+                confirmEndUI
                   ? "border-destructive bg-destructive text-destructive-foreground"
                   : "border-border text-muted-foreground hover:border-destructive hover:text-destructive"
               }`}
             >
-              <X className="w-4 h-4 inline mr-1" />{confirmEnd ? "确认结束" : "结束"}
+              <X className="w-4 h-4 inline mr-1" />{confirmEndUI ? "确认结束" : "结束"}
             </button>
           )}
         </div>
