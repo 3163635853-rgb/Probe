@@ -38,6 +38,7 @@ function SetupFlow() {
   const [modes, setModes] = useState<InterviewMode[]>([]);
   const [difficulties, setDifficulties] = useState<Difficulty[]>([]);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
+  const [activeSession, setActiveSession] = useState<ActiveInterview | null>(null);
 
   const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
@@ -55,9 +56,7 @@ function SetupFlow() {
       ]);
       setIndustries(industriesData);
       setQuota(quotaData);
-      if (active) {
-        router.replace(`/interview/${active.session_uuid}`);
-      }
+      setActiveSession(active);
     }
     init().catch(() => {});
   }, [router]);
@@ -135,6 +134,32 @@ function SetupFlow() {
             />
           ))}
         </div>
+
+        {/* 活跃面试提示 */}
+        {activeSession && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+            <p className="text-sm font-medium">你有一场正在进行的面试</p>
+            <div className="flex gap-2">
+              <Link
+                href={`/interview/${activeSession.session_uuid}`}
+                className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                继续面试
+              </Link>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetchAPI(`/interview/${activeSession.session_uuid}/end`, { method: "POST" });
+                  } catch {}
+                  setActiveSession(null);
+                }}
+                className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
+              >
+                放弃并新建
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 配额提示 */}
         {quota && !quota.can_start_interview && (
