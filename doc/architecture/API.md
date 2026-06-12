@@ -3,6 +3,7 @@
 > Base URL: `https://api.probe.app/api`
 > 认证: JWT Bearer Token (`Authorization: Bearer <token>`)
 > 内容类型: `application/json`
+> 最后更新: 2026-06-12 | 已实现 42 路由
 
 ---
 
@@ -763,3 +764,42 @@ Content-Type: multipart/form-data
   }
 }
 ```
+
+---
+
+## 15. 面试趋势 `/api/interview/stats` (新增)
+
+### GET /api/interview/stats — 最近 N 次分数趋势
+
+```json
+// Query: ?limit=20
+// Response 200
+{
+  "code": 0,
+  "data": {
+    "items": [
+      {"session_uuid": "xxx", "score": 72, "mode": "tech", "date": "2026-06-05T..."}
+    ],
+    "total_completed": 5,
+    "avg_score": 68.2,
+    "best_score": 85
+  }
+}
+```
+
+---
+
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-06-12 | 新增: POST /api/auth/register, POST /api/auth/login (邮箱密码认证) |
+| 2026-06-12 | 新增: POST /api/auth/wechat (微信登录，dev mock) |
+| 2026-06-12 | 新增: GET /api/interview/stats (趋势数据) |
+| 2026-06-12 | 新增: 支付模块 (/api/payment/plans, create, webhook, orders, subscription/current) |
+| 2026-06-12 | 新增: 语音模块 (/api/speech/transcribe, tts) |
+| 2026-06-12 | 新增: 邀请模块 (/api/invite/my-code, redeem, records) |
+| 2026-06-12 | 新增: 通知模块 (/api/notification/list, unread-count, {id}/read, read-all) |
+| 2026-06-12 | 新增: 优惠券模块 (/api/coupon/mine, redeem) |
+| 2026-06-12 | 新增: 成就模块 (/api/achievement/list) |
+| 2026-06-12 | LLM 改为 MiMo (小米) API，base_url: token-plan-cn.xiaomimimo.com |

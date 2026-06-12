@@ -22,10 +22,10 @@
 | 文件 | 用途 |
 |------|------|
 | `architecture/API.md` | **接口契约** — 所有端点、请求响应格式、错误码、SSE 事件 |
-| `implementation/PHASE1_WEB.md` | **任务清单** — 按周拆好的前端 Task + 组件清单 |
+| `implementation/PHASE1_WEB.md` | **完成状态 + 技术选型** — 页面清单、组件清单、编码规范指引 |
 | `architecture/ARCHITECTURE.md` | **参考** — 用户流程、系统全景 (理解产品) |
 
-**一句话**: API.md 是你的数据来源，WEB.md 是你的执行清单。不需要看数据库和部署。
+**一句话**: API.md 是你的数据来源，WEB.md 是你的技术参考和状态记录。编码规范见 `.claude/memory/web-coding-standards.md`。
 
 ---
 

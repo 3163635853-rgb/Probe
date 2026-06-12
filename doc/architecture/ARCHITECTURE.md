@@ -214,10 +214,10 @@ Agent 决策前:
 
 | 层 | 选型 | 理由 |
 |---|---|---|
-| 后端 | Python 3.11 + FastAPI | LLM 生态、异步、SSE 原生 |
+| 后端 | Python 3.12 + FastAPI + uv | LLM 生态、异步、SSE 原生 |
 | Agent | 自研 Loop | 面试逻辑固定，不需要通用框架复杂性 |
-| LLM | DeepSeek API | 便宜、中文好、OpenAI 兼容 |
-| 向量库 | Milvus | 开源自部署、混合检索 |
+| LLM | MiMo (小米) API | OpenAI 兼容、中文好、token-plan 低成本 |
+| 向量库 | FAISS (Phase 1) → Milvus (Phase 2+) | 零运维起步 |
 | Embedding | BGE-M3 本地 | 中文最强开源，1024d |
 | 关系库 | MySQL 8.0 | 结构化数据 |
 | 缓存 | Redis 7 | 工作记忆、限流 |

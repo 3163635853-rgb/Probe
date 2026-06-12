@@ -1,6 +1,9 @@
 # 数据库设计
 
-> 所有 Critical 问题已修复：BIGINT 主键 + uuid 外部暴露、配额单源 Redis、FK 对齐配置表、ENUM 精简
+> 最后更新: 2026-06-12
+> 状态: 19 张表全部建成（含 alembic_version），Alembic 管理迁移
+
+**已建成的表：** users, industries, positions, interview_modes, difficulty_configs, interview_sessions, interview_rounds, knowledge_questions, feedbacks, payments, subscriptions, invite_codes, invite_records, notifications, coupons, user_coupons, achievements, user_achievements
 
 ---
 
