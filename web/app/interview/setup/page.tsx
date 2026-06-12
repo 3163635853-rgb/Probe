@@ -169,7 +169,9 @@ function SetupFlow() {
                 onClick={async () => {
                   try {
                     await fetchAPI(`/interview/${activeSession.session_uuid}/end`, { method: "POST" });
-                  } catch {}
+                  } catch (e: any) {
+                    toast.error(e.message || "结束面试失败");
+                  }
                   setActiveSession(null);
                 }}
                 className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"

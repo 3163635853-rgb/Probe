@@ -179,7 +179,7 @@ async def end_interview(
     # 清理 active session
     await redis_client.delete(f"active_session:{user.id}")
 
-    return {"code": 0, "data": {"status": "completed"}}
+    return {"code": 0, "data": {"status": "reporting"}}
 
 
 @router.get("/{uuid}/report")

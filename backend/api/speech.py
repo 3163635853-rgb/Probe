@@ -48,9 +48,20 @@ async def transcribe(
                 model="whisper-1",
                 file=audio_file,
             )
+
+        # 提取音频时长
+        duration_sec = None
+        try:
+            import mutagen
+            audio_info = mutagen.File(tmp_path)
+            if audio_info and audio_info.info:
+                duration_sec = int(audio_info.info.length)
+        except Exception:
+            pass
+
         return {
             "code": 0,
-            "data": {"text": transcript.text, "duration_sec": None},
+            "data": {"text": transcript.text, "duration_sec": duration_sec},
         }
     except Exception as e:
         import logging
@@ -63,17 +74,27 @@ async def transcribe(
             pass
 
 
+VOICE_MAP = {
+    "female": "zh-CN-XiaoxiaoNeural",
+    "male": "zh-CN-YunxiNeural",
+    "zh-CN-XiaoxiaoNeural": "zh-CN-XiaoxiaoNeural",
+    "zh-CN-YunxiNeural": "zh-CN-YunxiNeural",
+    "zh-CN-XiaoyiNeural": "zh-CN-XiaoyiNeural",
+}
+
+
 @router.get("/tts")
 async def tts(
     text: str = Query(..., max_length=500),
-    voice: str = Query("zh-CN-XiaoxiaoNeural"),
+    voice: str = Query("female"),
     auth: tuple = Depends(get_current_user),
 ):
     """文字转语音 (Edge TTS)"""
     if not text.strip():
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "文本不能为空"})
 
-    communicate = edge_tts.Communicate(text, voice)
+    resolved_voice = VOICE_MAP.get(voice, "zh-CN-XiaoxiaoNeural")
+    communicate = edge_tts.Communicate(text, resolved_voice)
 
     async def audio_stream():
         async for chunk in communicate.stream():

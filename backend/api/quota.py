@@ -49,15 +49,18 @@ async def quota_status(auth: tuple = Depends(get_current_user)):
     # Check active session
     active = await redis_client.exists(f"active_session:{user.id}")
 
+    unlimited = total >= 9999
+
     return {
         "code": 0,
         "data": {
             "plan": user.membership_type,
-            "quota_total": total if total < 9999 else -1,
+            "unlimited": unlimited,
+            "quota_total": total if not unlimited else -1,
             "quota_used": used,
-            "quota_remaining": remaining if total < 9999 else -1,
+            "quota_remaining": remaining if not unlimited else -1,
             "reset_at": _next_month_start().isoformat(),
-            "can_start_interview": remaining > 0 and not active,
+            "can_start_interview": (unlimited or remaining > 0) and not active,
         },
     }
 

@@ -178,33 +178,3 @@ async def get_orders(
             "has_more": offset + page_size < total,
         },
     }
-
-
-@router.get("/subscription/current")
-async def get_subscription(
-    auth: tuple = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    user, _ = auth
-    result = await db.execute(
-        select(Subscription).where(
-            Subscription.user_id == user.id,
-            Subscription.status == "active",
-        ).order_by(desc(Subscription.expire_at)).limit(1)
-    )
-    sub = result.scalar_one_or_none()
-    if not sub:
-        return {"code": 0, "data": None}
-
-    now = datetime.now(timezone.utc)
-    return {
-        "code": 0,
-        "data": {
-            "plan": sub.plan,
-            "status": sub.status,
-            "started_at": sub.started_at.isoformat(),
-            "expire_at": sub.expire_at.isoformat(),
-            "auto_renew": sub.auto_renew,
-            "days_remaining": max(0, (sub.expire_at - now).days),
-        },
-    }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
+import { useToast } from "./Toast";
 
 interface Props {
   sessionUuid: string;
@@ -14,6 +15,7 @@ export function FeedbackModal({ sessionUuid, onClose }: Props) {
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   async function submit() {
     if (rating === 0) {
@@ -32,7 +34,7 @@ export function FeedbackModal({ sessionUuid, onClose }: Props) {
         }),
       });
     } catch {
-      // 静默失败，不阻塞跳转
+      toast.error("提交失败，不影响查看报告");
     }
     onClose();
   }

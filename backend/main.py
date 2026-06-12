@@ -14,11 +14,14 @@ from api.interview import router as interview_router
 from api.interview_stream import router as interview_stream_router
 from api.feedback import router as feedback_router
 from api.payment import router as payment_router
+from api.subscription import router as subscription_router
 from api.speech import router as speech_router
 from api.invite import router as invite_router
 from api.notification import router as notification_router
 from api.coupon import router as coupon_router
 from api.achievement import router as achievement_router
+from api.share import router as share_router
+from api.file import router as file_router
 from middleware.rate_limit import RateLimitMiddleware
 
 setup_logging(debug=settings.DEBUG)
@@ -56,11 +59,14 @@ app.include_router(interview_router)
 app.include_router(interview_stream_router)
 app.include_router(feedback_router)
 app.include_router(payment_router)
+app.include_router(subscription_router)
 app.include_router(speech_router)
 app.include_router(invite_router)
 app.include_router(notification_router)
 app.include_router(coupon_router)
 app.include_router(achievement_router)
+app.include_router(share_router)
+app.include_router(file_router)
 
 
 @app.get("/health")
