@@ -31,4 +31,13 @@ async def evaluate(
         {"role": "system", "content": EVALUATOR_PROMPT},
         {"role": "user", "content": user_msg},
     ]
-    return await chat_json(messages, EVAL_PARAMS)
+    result = await chat_json(messages, EVAL_PARAMS)
+
+    # 校验 score 范围，防止 prompt 注入篡改分数
+    score = result.get("score", 5)
+    if not isinstance(score, (int, float)) or score < 0 or score > 10:
+        result["score"] = 5
+    else:
+        result["score"] = int(score)
+
+    return result

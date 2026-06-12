@@ -1,5 +1,4 @@
 import uuid as uuid_lib
-import time
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession

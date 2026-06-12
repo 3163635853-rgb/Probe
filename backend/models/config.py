@@ -39,7 +39,7 @@ class InterviewMode(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(32), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(256))
     icon: Mapped[Optional[str]] = mapped_column(String(256))
-    applicable_categories: Mapped[Optional[dict]] = mapped_column(JSON)
+    applicable_categories: Mapped[Optional[list]] = mapped_column(JSON)
     default_rounds: Mapped[int] = mapped_column(SmallInteger, default=10)
     default_duration_min: Mapped[int] = mapped_column(SmallInteger, default=30)
     dimension_weights: Mapped[Optional[dict]] = mapped_column(JSON)

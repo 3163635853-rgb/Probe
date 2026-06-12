@@ -53,7 +53,9 @@ async def transcribe(
             "data": {"text": transcript.text, "duration_sec": None},
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail={"code": 50001, "message": f"语音识别失败: {str(e)}"})
+        import logging
+        logging.getLogger(__name__).error(f"Transcribe failed: {e}")
+        raise HTTPException(status_code=500, detail={"code": 50001, "message": "语音识别失败，请稍后重试"})
     finally:
         try:
             Path(tmp_path).unlink()

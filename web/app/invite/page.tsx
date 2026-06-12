@@ -61,9 +61,13 @@ function InviteContent() {
                 {info.code}
               </code>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(info.code);
-                  toast.success("已复制");
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(info.code);
+                    toast.success("已复制");
+                  } catch {
+                    toast.error("复制失败");
+                  }
                 }}
                 className="rounded-lg border border-border p-3 hover:bg-secondary transition-colors"
                 title="复制"

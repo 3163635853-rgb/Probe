@@ -1,4 +1,4 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -19,8 +19,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         auth_header = request.headers.get("authorization", "")
         if auth_header.startswith("Bearer "):
             payload = decode_token(auth_header[7:])
-            if payload:
-                key = f"rate:{payload['sub']}"
+            if payload and payload.get("sub"):
+                key = f"rate:{payload.get('sub')}"
                 limit = 60
             else:
                 key = f"rate:ip:{client_host}"
@@ -30,8 +30,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             token = request.query_params.get("token")
             if token:
                 payload = decode_token(token)
-                if payload:
-                    key = f"rate:{payload['sub']}"
+                if payload and payload.get("sub"):
+                    key = f"rate:{payload.get('sub')}"
                     limit = 60
                 else:
                     key = f"rate:ip:{client_host}"

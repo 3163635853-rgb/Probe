@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ClipboardList, TrendingUp } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
+import { useToast } from "@/components/Toast";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewHistoryItem, PaginatedData } from "@/lib/types";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -17,6 +18,7 @@ export default function HistoryPage() {
 }
 
 function HistoryContent() {
+  const toast = useToast();
   const [items, setItems] = useState<InterviewHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -36,7 +38,7 @@ function HistoryContent() {
       setHasMore(data.has_more);
       setPage(p);
     } catch {
-      // 静默，页面显示空状态
+      toast.error("加载失败");
     } finally {
       setLoading(false);
     }

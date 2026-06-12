@@ -49,9 +49,11 @@ class WechatLoginRequest(BaseModel):
 @router.post("/wechat")
 async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_db)):
     """微信登录: code → openid → 查/建用户 → JWT"""
-    if settings.DEBUG or not settings.WX_APP_ID:
-        # 开发模式 mock
+    if settings.DEBUG and not settings.WX_APP_ID:
+        # 开发模式 mock（DEBUG=True 且未配置 WX_APP_ID 才生效）
         openid = f"dev_{req.code}"
+    elif not settings.WX_APP_ID:
+        raise HTTPException(status_code=503, detail={"code": 50003, "message": "微信登录未配置"})
     else:
         # 调微信 API
         async with httpx.AsyncClient() as client:

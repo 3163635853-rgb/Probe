@@ -49,20 +49,24 @@ function SetupFlow() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [jdText, setJdText] = useState("");
 
-  // 初始化：检查活跃面试 + 加载行业 + 配额
+  // 初始化：加载行业 + 配额 + 检查活跃面试
   useEffect(() => {
     async function init() {
-      const [industriesData, quotaData, active] = await Promise.all([
-        fetchAPI<Industry[]>("/config/industries"),
-        fetchAPI<QuotaStatus>("/quota/status"),
-        fetchAPI<ActiveInterview | null>("/interview/active"),
-      ]);
-      setIndustries(industriesData);
-      setQuota(quotaData);
-      setActiveSession(active);
+      try {
+        const [industriesData, quotaData, active] = await Promise.all([
+          fetchAPI<Industry[]>("/config/industries"),
+          fetchAPI<QuotaStatus>("/quota/status"),
+          fetchAPI<ActiveInterview | null>("/interview/active"),
+        ]);
+        setIndustries(industriesData);
+        setQuota(quotaData);
+        setActiveSession(active);
+      } catch {
+        toast.error("加载配置失败，请刷新重试");
+      }
     }
-    init().catch(() => {});
-  }, [router]);
+    init();
+  }, [toast]);
 
   // 选行业后加载岗位
   async function selectIndustry(ind: Industry) {

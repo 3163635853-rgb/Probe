@@ -88,7 +88,7 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Payment).where(Payment.order_no == order_no))
     payment = result.scalar_one_or_none()
     if not payment or payment.status != "pending":
-        return {"code": 0, "message": "ignored"}
+        return {"code": 0, "data": None, "message": "ignored"}
 
     # 更新支付状态
     payment.status = "paid"
@@ -132,7 +132,7 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             user.membership_expire_at = new_expire
 
     await db.commit()
-    return {"code": 0, "message": "success"}
+    return {"code": 0, "data": None, "message": "success"}
 
 
 @router.get("/orders")

@@ -98,7 +98,7 @@ async def mark_all_read(
     user, _ = auth
     result = await db.execute(
         update(Notification)
-        .where(Notification.user_id == user.id, Notification.is_read == False)
+        .where(Notification.user_id == user.id, Notification.is_read.is_(False))
         .values(is_read=True)
     )
     await db.commit()

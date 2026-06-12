@@ -2,6 +2,7 @@
 
 import { Check, Bell } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
+import { useToast } from "@/components/Toast";
 import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
 import { useState } from "react";
@@ -28,20 +29,28 @@ function NotificationsContent() {
   const { data, loading, refetch } = useFetch<PaginatedData<Notification>>("/notification/list?page=1&page_size=50");
   const [optimistic, setOptimistic] = useState<Set<number>>(new Set());
 
+  const toast = useToast();
+
   const items = data?.items || [];
 
   async function markRead(id: number) {
     setOptimistic((s) => new Set(s).add(id));
     try {
       await fetchAPI(`/notification/${id}/read`, { method: "PUT" });
-    } catch {}
+    } catch {
+      setOptimistic((s) => { const n = new Set(s); n.delete(id); return n; });
+      toast.error("标记已读失败");
+    }
   }
 
   async function markAllRead() {
     setOptimistic(new Set(items.map((n) => n.id)));
     try {
       await fetchAPI("/notification/read-all", { method: "PUT" });
-    } catch {}
+    } catch {
+      setOptimistic(new Set());
+      toast.error("操作失败");
+    }
   }
 
   const isRead = (n: Notification) => n.is_read || optimistic.has(n.id);
