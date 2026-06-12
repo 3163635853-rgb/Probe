@@ -1,8 +1,11 @@
 import tempfile
+import edge_tts
 from pathlib import Path
 from fastapi import APIRouter, Depends, UploadFile, File, Query, HTTPException
 from fastapi.responses import StreamingResponse
+from openai import AsyncOpenAI
 
+from config import settings
 from api.deps import get_current_user
 
 router = APIRouter(prefix="/api/speech", tags=["speech"])
@@ -29,9 +32,6 @@ async def transcribe(
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "音频文件不能超过 25MB"})
 
     # 调 Whisper API (OpenAI 兼容)
-    from openai import AsyncOpenAI
-    from config import settings
-
     client = AsyncOpenAI(
         api_key=settings.DEEPSEEK_API_KEY or "sk-placeholder",
         base_url=settings.DEEPSEEK_BASE_URL,
@@ -70,8 +70,6 @@ async def tts(
     """文字转语音 (Edge TTS)"""
     if not text.strip():
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "文本不能为空"})
-
-    import edge_tts
 
     communicate = edge_tts.Communicate(text, voice)
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fetchAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 import { AuthGuard } from "@/components/AuthGuard";
 import type {
   Industry,
@@ -28,6 +29,7 @@ export default function SetupPage() {
 
 function SetupFlow() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState<Step>("industry");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,25 +67,37 @@ function SetupFlow() {
   async function selectIndustry(ind: Industry) {
     setSelectedIndustry(ind);
     setSelectedPosition(null);
-    const data = await fetchAPI<Position[]>(`/config/positions?industry_id=${ind.id}`);
-    setPositions(data);
-    setStep("position");
+    try {
+      const data = await fetchAPI<Position[]>(`/config/positions?industry_id=${ind.id}`);
+      setPositions(data);
+      setStep("position");
+    } catch (e: any) {
+      toast.error(e.message || "加载岗位失败");
+    }
   }
 
   // 选岗位后加载模式
   async function selectPosition(pos: Position) {
     setSelectedPosition(pos);
-    const data = await fetchAPI<InterviewMode[]>(`/config/modes?category=${pos.category}`);
-    setModes(data);
-    setStep("mode");
+    try {
+      const data = await fetchAPI<InterviewMode[]>(`/config/modes?category=${pos.category}`);
+      setModes(data);
+      setStep("mode");
+    } catch (e: any) {
+      toast.error(e.message || "加载模式失败");
+    }
   }
 
   // 选模式后加载难度
   async function selectMode(mode: InterviewMode) {
     setSelectedMode(mode);
-    const data = await fetchAPI<Difficulty[]>("/config/difficulties");
-    setDifficulties(data);
-    setStep("difficulty");
+    try {
+      const data = await fetchAPI<Difficulty[]>("/config/difficulties");
+      setDifficulties(data);
+      setStep("difficulty");
+    } catch (e: any) {
+      toast.error(e.message || "加载难度失败");
+    }
   }
 
   function selectDifficulty(diff: Difficulty) {
@@ -112,7 +126,7 @@ function SetupFlow() {
       });
       router.push(`/interview/${data.session_uuid}`);
     } catch (e: any) {
-      setError(e.message || "创建面试失败");
+      toast.error(e.message || "创建面试失败");
     } finally {
       setLoading(false);
     }

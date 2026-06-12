@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Quota
     FREE_MONTHLY_QUOTA: int = 3
 
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

@@ -62,7 +62,7 @@ async def redeem_coupon(
 
     # 查优惠券（用 name 当兑换码，简化）
     result = await db.execute(
-        select(Coupon).where(Coupon.name == req.code, Coupon.is_active == True)
+        select(Coupon).where(Coupon.name == req.code, Coupon.is_active.is_(True))
     )
     coupon = result.scalar_one_or_none()
     if not coupon:

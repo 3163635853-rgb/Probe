@@ -22,7 +22,7 @@ async def list_notifications(
 
     where = [Notification.user_id == user.id]
     if unread_only:
-        where.append(Notification.is_read == False)
+        where.append(Notification.is_read.is_(False))
 
     count_result = await db.execute(
         select(func.count()).select_from(Notification).where(*where)
@@ -67,7 +67,7 @@ async def unread_count(
     user, _ = auth
     result = await db.execute(
         select(func.count()).select_from(Notification).where(
-            Notification.user_id == user.id, Notification.is_read == False
+            Notification.user_id == user.id, Notification.is_read.is_(False)
         )
     )
     count = result.scalar() or 0

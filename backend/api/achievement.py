@@ -17,7 +17,7 @@ async def list_achievements(
     user, _ = auth
 
     # 查所有成就
-    result = await db.execute(select(Achievement).where(Achievement.is_active == True))
+    result = await db.execute(select(Achievement).where(Achievement.is_active.is_(True)))
     all_achievements = result.scalars().all()
 
     # 查用户已达成
@@ -57,7 +57,7 @@ async def check_and_grant_achievements(user_id: int, db: AsyncSession):
     )
     achieved_ids = {row[0] for row in ua_result.all()}
 
-    result = await db.execute(select(Achievement).where(Achievement.is_active == True))
+    result = await db.execute(select(Achievement).where(Achievement.is_active.is_(True)))
     all_achievements = result.scalars().all()
 
     # 用户面试统计

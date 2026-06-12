@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, TrendingUp, Lightbulb, XCircle, Brain, Download } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
-import { fetchAPI } from "@/lib/api";
+import { useFetch } from "@/lib/hooks";
+import { useToast } from "@/components/Toast";
 import type { InterviewReport } from "@/lib/types";
 import {
   RadarChart,
@@ -26,16 +27,10 @@ export default function ReportPage() {
 
 function ReportContent() {
   const { uuid } = useParams<{ uuid: string }>();
-  const [report, setReport] = useState<InterviewReport | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: report, loading } = useFetch<InterviewReport>(`/interview/${uuid}/report`, [uuid]);
   const [tab, setTab] = useState<"report" | "replay">("report");
   const shareRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchAPI<InterviewReport>(`/interview/${uuid}/report`)
-      .then(setReport)
-      .finally(() => setLoading(false));
-  }, [uuid]);
+  const toast = useToast();
 
   if (loading) {
     return (
@@ -233,12 +228,17 @@ function ReportContent() {
           <button
             onClick={async () => {
               if (!shareRef.current) return;
-              const html2canvas = (await import("html2canvas")).default;
-              const canvas = await html2canvas(shareRef.current, { scale: 2 });
-              const link = document.createElement("a");
-              link.download = `probe-report-${uuid}.png`;
-              link.href = canvas.toDataURL();
-              link.click();
+              try {
+                const html2canvas = (await import("html2canvas")).default;
+                const canvas = await html2canvas(shareRef.current, { scale: 2 });
+                const link = document.createElement("a");
+                link.download = `probe-report-${uuid}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                toast.success("图片已保存");
+              } catch {
+                toast.error("保存图片失败");
+              }
             }}
             className="flex-1 rounded-full border border-border py-3 font-medium hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5"
           >

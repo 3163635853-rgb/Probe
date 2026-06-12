@@ -1,5 +1,6 @@
 import uuid as uuid_lib
 import bcrypt
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,7 @@ from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
+from config import settings
 from db.mysql import get_db
 from models.user import User
 from api.deps import get_current_user
@@ -47,9 +49,6 @@ class WechatLoginRequest(BaseModel):
 @router.post("/wechat")
 async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_db)):
     """微信登录: code → openid → 查/建用户 → JWT"""
-    import httpx
-    from config import settings
-
     if settings.DEBUG or not settings.WX_APP_ID:
         # 开发模式 mock
         openid = f"dev_{req.code}"

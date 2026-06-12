@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/config", tags=["config"])
 @router.get("/industries")
 async def get_industries(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(Industry).where(Industry.is_active == True).order_by(Industry.sort_order)
+        select(Industry).where(Industry.is_active.is_(True)).order_by(Industry.sort_order)
     )
     industries = result.scalars().all()
     return {
@@ -28,7 +28,7 @@ async def get_industries(db: AsyncSession = Depends(get_db)):
 async def get_positions(industry_id: int = Query(...), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Position)
-        .where(Position.industry_id == industry_id, Position.is_active == True)
+        .where(Position.industry_id == industry_id, Position.is_active.is_(True))
         .order_by(Position.sort_order)
     )
     positions = result.scalars().all()
@@ -50,7 +50,7 @@ async def get_positions(industry_id: int = Query(...), db: AsyncSession = Depend
 @router.get("/modes")
 async def get_modes(category: Optional[str] = Query(None), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(InterviewMode).where(InterviewMode.is_active == True).order_by(InterviewMode.sort_order)
+        select(InterviewMode).where(InterviewMode.is_active.is_(True)).order_by(InterviewMode.sort_order)
     )
     modes = result.scalars().all()
     # Filter by category if specified

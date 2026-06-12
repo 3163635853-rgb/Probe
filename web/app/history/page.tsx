@@ -35,6 +35,8 @@ function HistoryContent() {
       setItems((prev) => (p === 1 ? data.items : [...prev, ...data.items]));
       setHasMore(data.has_more);
       setPage(p);
+    } catch {
+      // 静默，页面显示空状态
     } finally {
       setLoading(false);
     }

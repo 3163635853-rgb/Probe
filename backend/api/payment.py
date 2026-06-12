@@ -4,10 +4,11 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from pydantic import BaseModel
 from typing import Optional
 
+from config import settings
 from db.mysql import get_db
 from models.user import User
 from models.payment import Payment, Subscription
@@ -76,7 +77,6 @@ async def create_order(
 @router.post("/webhook")
 async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """微信支付回调（生产环境需验签）"""
-    from config import settings
     if not settings.DEBUG:
         # TODO: 实现微信支付签名验证
         raise HTTPException(status_code=403, detail={"code": 40301, "message": "签名验证未实现"})
@@ -145,7 +145,6 @@ async def get_orders(
     user, _ = auth
     offset = (page - 1) * page_size
 
-    from sqlalchemy import func
     count_result = await db.execute(
         select(func.count()).select_from(Payment).where(Payment.user_id == user.id)
     )

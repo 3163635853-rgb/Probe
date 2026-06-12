@@ -38,10 +38,10 @@ app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 # RateLimitMiddleware 先注册 → 后执行
 app.add_middleware(RateLimitMiddleware)
 
-# CORSMiddleware 后注册 → 先执行（处理 preflight OPTIONS）
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://192.168.11.118:3000"],
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -74,7 +74,7 @@ async def redeem_invite(
 
     # 查邀请码
     result = await db.execute(
-        select(InviteCode).where(InviteCode.code == req.code.upper(), InviteCode.is_active == True)
+        select(InviteCode).where(InviteCode.code == req.code.upper(), InviteCode.is_active.is_(True))
     )
     invite = result.scalar_one_or_none()
     if not invite:
