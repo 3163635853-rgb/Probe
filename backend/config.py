@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Quota
     FREE_MONTHLY_QUOTA: int = 3
 
+    # Session
+    SESSION_TTL: int = 7200  # 2h, Redis session/memory expiry
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
 

@@ -3,6 +3,22 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+
+
+async def _get_ongoing_session(db: AsyncSession, uuid: str, user_id: int) -> "InterviewSession":
+    """获取用户拥有的进行中 session，不存在则 404"""
+    from models.interview import InterviewSession
+    result = await db.execute(
+        select(InterviewSession).where(
+            InterviewSession.uuid == uuid,
+            InterviewSession.user_id == user_id,
+            InterviewSession.status == "ongoing",
+        )
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail={"code": 40401, "message": "面试不存在或已结束"})
+    return session
 from pydantic import BaseModel
 from typing import Optional
 
@@ -103,17 +119,7 @@ async def submit_answer(
     db: AsyncSession = Depends(get_db),
 ):
     user, _ = auth
-    # 验证 session 属于该用户
-    result = await db.execute(
-        select(InterviewSession).where(
-            InterviewSession.uuid == uuid,
-            InterviewSession.user_id == user.id,
-            InterviewSession.status == "ongoing",
-        )
-    )
-    session = result.scalar_one_or_none()
-    if not session:
-        raise HTTPException(status_code=404, detail={"code": 40401, "message": "面试不存在或已结束"})
+    session = await _get_ongoing_session(db, uuid, user.id)
 
     # 限制回答长度
     content = req.content[:5000]
@@ -131,16 +137,7 @@ async def skip_question(
     db: AsyncSession = Depends(get_db),
 ):
     user, _ = auth
-    result = await db.execute(
-        select(InterviewSession).where(
-            InterviewSession.uuid == uuid,
-            InterviewSession.user_id == user.id,
-            InterviewSession.status == "ongoing",
-        )
-    )
-    session = result.scalar_one_or_none()
-    if not session:
-        raise HTTPException(status_code=404, detail={"code": 40401, "message": "面试不存在或已结束"})
+    session = await _get_ongoing_session(db, uuid, user.id)
 
     await redis_client.set(f"answer:{uuid}", "__SKIP__", ex=300)
 
@@ -154,16 +151,7 @@ async def end_interview(
     db: AsyncSession = Depends(get_db),
 ):
     user, _ = auth
-    result = await db.execute(
-        select(InterviewSession).where(
-            InterviewSession.uuid == uuid,
-            InterviewSession.user_id == user.id,
-            InterviewSession.status == "ongoing",
-        )
-    )
-    session = result.scalar_one_or_none()
-    if not session:
-        raise HTTPException(status_code=404, detail={"code": 40401, "message": "面试不存在或已结束"})
+    session = await _get_ongoing_session(db, uuid, user.id)
 
     # 通知 Agent 循环结束（如果它还在 _wait_for_answer）
     await redis_client.set(f"answer:{uuid}", "__END__", ex=300)

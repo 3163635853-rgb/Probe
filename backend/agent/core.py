@@ -2,9 +2,9 @@ import json
 import time
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Optional
 
 from db.redis import redis_client
+from config import settings
 
 
 class AgentState(str, Enum):
@@ -45,10 +45,6 @@ def _ctx_key(session_id: str) -> str:
     return f"agent_ctx:{session_id}"
 
 
-def _asked_key(session_id: str) -> str:
-    return f"asked:{session_id}"
-
-
 SESSION_TTL = 7200  # 2h
 
 
@@ -61,20 +57,10 @@ async def save_state(session_id: str, state: AgentState, round_num: int, plan: l
     await redis_client.expire(key, SESSION_TTL)
 
 
-async def get_state(session_id: str) -> tuple[AgentState | None, int]:
-    key = _session_key(session_id)
-    data = await redis_client.hgetall(key)
-    if not data:
-        return None, 0
-    state = AgentState(data.get("state", "IDLE"))
-    round_num = int(data.get("round", "0"))
-    return state, round_num
-
-
 async def save_context(session_id: str, ctx: AgentContext):
     key = _ctx_key(session_id)
     data = {
-        "recent_rounds": ctx.recent_rounds[-3:],  # 只保留最近3轮
+        "recent_rounds": ctx.recent_rounds[-3:],
         "plan": ctx.plan,
         "plan_index": ctx.plan_index,
         "current_round": ctx.current_round,
@@ -94,17 +80,6 @@ async def load_context(session_id: str) -> dict | None:
     if not raw:
         return None
     return json.loads(raw)
-
-
-async def mark_asked(session_id: str, question_id: int):
-    key = _asked_key(session_id)
-    await redis_client.sadd(key, str(question_id))
-    await redis_client.expire(key, SESSION_TTL)
-
-
-async def is_asked(session_id: str, question_id: int) -> bool:
-    key = _asked_key(session_id)
-    return await redis_client.sismember(key, str(question_id))
 
 
 # Lua 脚本: 原子扣配额 + 设 active_session

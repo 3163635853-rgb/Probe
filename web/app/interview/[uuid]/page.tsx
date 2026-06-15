@@ -42,7 +42,7 @@ type Action =
   | { type: "SET_DONE" }
   | { type: "SET_SCORE"; data: { round: number; score: number; brief: string } };
 
-let msgId = 0;
+let msgId = Date.now();
 
 function reducer(state: InterviewState, action: Action): InterviewState {
   switch (action.type) {
