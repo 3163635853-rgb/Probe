@@ -8,7 +8,6 @@ from db.mysql import get_db
 from db.redis import redis_client
 from models.invite import InviteCode, InviteRecord
 from api.deps import get_current_user
-from config import settings
 
 router = APIRouter(prefix="/api/invite", tags=["invite"])
 
@@ -101,18 +100,24 @@ async def redeem_invite(
         invite_code_id=invite.id,
         inviter_user_id=invite.inviter_user_id,
         invitee_user_id=user.id,
-        reward_given=True,
+        reward_given=False,
     )
     db.add(record)
     invite.used_count += 1
     await db.commit()
 
-    # 发奖: 给双方加配额（DB 事务成功后才操作 Redis）
-    from datetime import datetime, timezone  # 延迟导入避免循环
+    # 发奖: Redis 配额（DB 事务成功后才操作）
+    from datetime import datetime, timezone
     month = datetime.now(timezone.utc).strftime("%Y-%m")
-    await redis_client.incrby(f"quota:{user.id}:{month}", REWARD_QUOTA)
-    if invite.inviter_user_id and invite.used_count <= MAX_INVITE_REWARD // REWARD_QUOTA:
-        await redis_client.incrby(f"quota:{invite.inviter_user_id}:{month}", REWARD_QUOTA)
+    try:
+        await redis_client.incrby(f"quota:{user.id}:{month}", REWARD_QUOTA)
+        if invite.inviter_user_id and invite.used_count <= MAX_INVITE_REWARD // REWARD_QUOTA:
+            await redis_client.incrby(f"quota:{invite.inviter_user_id}:{month}", REWARD_QUOTA)
+        # Redis 成功后标记奖励已发
+        record.reward_given = True
+        await db.commit()
+    except Exception:
+        pass  # Redis 失败则奖励未发，下次可重试
 
     return {
         "code": 0,

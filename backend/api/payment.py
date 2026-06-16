@@ -1,5 +1,4 @@
 import uuid as uuid_lib
-import time
 import secrets
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request

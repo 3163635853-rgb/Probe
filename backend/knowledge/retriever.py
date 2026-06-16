@@ -64,11 +64,11 @@ class FAISSRetriever:
             # 过滤
             if exclude_ids and qid in exclude_ids:
                 continue
-            if industry_id and meta.get("industry_id") != industry_id:
+            if industry_id is not None and meta.get("industry_id") != industry_id:
                 continue
-            if position_id and meta.get("position_id") != position_id:
+            if position_id is not None and meta.get("position_id") != position_id:
                 continue
-            if difficulty and abs(meta.get("difficulty", 3) - difficulty) > 1:
+            if difficulty is not None and abs(meta.get("difficulty", 3) - difficulty) > 1:
                 continue
 
             results.append(QuestionResult(

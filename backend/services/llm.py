@@ -78,7 +78,13 @@ async def chat_json(messages: list[dict], params: dict | None = None) -> dict:
     p = {**PLAN_PARAMS, **(params or {})}
     text = await chat(messages, p)
     text = text.strip()
+    # 剥离 markdown code fence (```json ... ``` 或 ``` ... ```)
     if text.startswith("```"):
         lines = text.split("\n")
-        text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        # 去首行 (```json 或 ```)
+        lines = lines[1:]
+        # 去尾行如果是 ``` (允许尾部空白)
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines)
     return json.loads(text)
