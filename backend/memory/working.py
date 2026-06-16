@@ -1,7 +1,8 @@
 """工作记忆 — Redis 存储，面试期间有效"""
 from db.redis import redis_client
+from config import settings
 
-SESSION_TTL = 7200  # 2h
+SESSION_TTL = settings.SESSION_TTL
 
 
 async def mark_asked(session_id: str, question_id: int):

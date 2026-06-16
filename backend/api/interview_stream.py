@@ -15,7 +15,7 @@ from models.user import User
 from models.interview import InterviewSession, InterviewRound
 from models.config import Industry, Position
 from agent.core import (
-    AgentState, save_state, get_state, load_context, save_context,
+    AgentState, save_state, load_context, save_context, SESSION_TTL,
 )
 from agent.planner import plan
 from agent.evaluator import evaluate
@@ -35,7 +35,7 @@ async def _push_event(session_id: str, seq: int, event: str, data: dict) -> str:
     payload = json.dumps(data, ensure_ascii=False)
     log_entry = f"{seq}|{event}|{payload}"
     await redis_client.rpush(f"sse_log:{session_id}", log_entry)
-    await redis_client.expire(f"sse_log:{session_id}", 7200)
+    await redis_client.expire(f"sse_log:{session_id}", SESSION_TTL)
     return f"id: {seq}\nevent: {event}\ndata: {payload}\n\n"
 
 
@@ -63,7 +63,6 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
 
     async def event_generator():
         seq = last_event_id
-        last_heartbeat = time.time()
 
         # 重连恢复: 从 Redis sse_log 重放
         if last_event_id > 0:
@@ -86,7 +85,6 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
                     event_str = await asyncio.wait_for(agent_gen.__anext__(), timeout=HEARTBEAT_INTERVAL)
                     yield event_str
                     seq += 1
-                    last_heartbeat = time.time()
                 except asyncio.TimeoutError:
                     yield ":ping\n\n"
                 except StopAsyncIteration:
@@ -305,7 +303,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         ctx_data["plan_index"] = round_idx + 1
         ctx_data["current_round"] = current_round
         ctx_data["recent_rounds"] = recent_rounds[-3:]
-        await redis_client.set(f"agent_ctx:{session_uuid}", json.dumps(ctx_data, ensure_ascii=False), ex=7200)
+        await redis_client.set(f"agent_ctx:{session_uuid}", json.dumps(ctx_data, ensure_ascii=False), ex=SESSION_TTL)
 
         # Status update
         seq += 1

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
+from config import settings
 
 
 async def _get_ongoing_session(db: AsyncSession, uuid: str, user_id: int) -> "InterviewSession":
@@ -83,7 +84,7 @@ async def start_interview(
     await db.refresh(session)
 
     # 更新 active_session 为真实 session_uuid
-    await redis_client.set(f"active_session:{user.id}", session_uuid, ex=7200)
+    await redis_client.set(f"active_session:{user.id}", session_uuid, ex=settings.SESSION_TTL)
 
     # 初始化 Agent 状态
     await save_state(session_uuid, AgentState.PLANNING, 0)

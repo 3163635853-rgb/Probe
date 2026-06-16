@@ -45,7 +45,7 @@ def _ctx_key(session_id: str) -> str:
     return f"agent_ctx:{session_id}"
 
 
-SESSION_TTL = 7200  # 2h
+SESSION_TTL = settings.SESSION_TTL
 
 
 async def save_state(session_id: str, state: AgentState, round_num: int, plan: list | None = None):

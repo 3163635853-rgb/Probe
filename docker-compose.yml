@@ -14,7 +14,7 @@ services:
       backend:
         condition: service_healthy
       web:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   backend:
@@ -44,9 +44,15 @@ services:
     restart: unless-stopped
 
   web:
-    build: ./web
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.probe.app/api
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: https://api.probe.app/api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     deploy:
       resources:
         limits:
