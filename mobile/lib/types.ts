@@ -171,3 +171,11 @@ export interface QuotaStatus {
   reset_at: string;
   can_start_interview: boolean;
 }
+
+// Stats
+export interface InterviewStats {
+  items: { session_uuid: string; score: number; mode: string; date: string }[];
+  total_completed: number;
+  avg_score: number;
+  best_score: number;
+}

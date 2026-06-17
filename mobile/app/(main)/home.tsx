@@ -3,15 +3,16 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { Play, Zap, Trophy, ArrowRight } from "lucide-react-native";
+import { Play, Zap, Trophy, TrendingUp, ArrowRight } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
 import { useFetch } from "@/lib/hooks";
-import type { QuotaStatus, PaginatedData, InterviewHistoryItem } from "@/lib/types";
+import type { QuotaStatus, PaginatedData, InterviewHistoryItem, InterviewStats } from "@/lib/types";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: quota } = useFetch<QuotaStatus>("/quota/status");
+  const { data: stats } = useFetch<InterviewStats>("/interview/stats?limit=10");
   const { data: recent } = useFetch<PaginatedData<InterviewHistoryItem>>(
     "/interview/history?page=1&page_size=3"
   );
@@ -106,13 +107,13 @@ export default function HomeScreen() {
           {/* Score Card */}
           <View className="flex-1 rounded-xl border border-border bg-white p-4">
             <View className="flex-row items-center gap-2 mb-2">
-              <Trophy size={14} color="#0d9488" />
-              <Text className="text-xs text-muted-foreground">总面试</Text>
+              <TrendingUp size={14} color="#0d9488" />
+              <Text className="text-xs text-muted-foreground">均分</Text>
             </View>
             <Text className="text-xl font-bold text-foreground">
-              {user?.total_interviews ?? 0}
+              {stats?.avg_score ? Math.round(stats.avg_score) : "--"}
               <Text className="text-sm font-normal text-muted-foreground">
-                {" "}次
+                {" "}/ 100
               </Text>
             </Text>
           </View>

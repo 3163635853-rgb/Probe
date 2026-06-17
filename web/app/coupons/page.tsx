@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Ticket } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useFetch } from "@/lib/hooks";
+import { fetchAPI } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 interface Coupon {
   id: number;
@@ -24,14 +26,44 @@ export default function CouponsPage() {
 
 function CouponsContent() {
   const [filter, setFilter] = useState<"unused" | "all">("unused");
-  const { data: coupons, loading } = useFetch<Coupon[]>(`/coupon/mine?status=${filter}`, [filter]);
+  const { data: coupons, loading, refetch } = useFetch<Coupon[]>(`/coupon/mine?status=${filter}`, [filter]);
+  const [redeemCode, setRedeemCode] = useState("");
+  const toast = useToast();
 
   const items = coupons || [];
+
+  async function handleRedeem() {
+    if (!redeemCode.trim()) return;
+    try {
+      await fetchAPI("/coupon/redeem", {
+        method: "POST",
+        body: JSON.stringify({ code: redeemCode.trim() }),
+      });
+      toast.success("兑换成功");
+      setRedeemCode("");
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || "兑换失败");
+    }
+  }
 
   return (
     <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-2xl px-4 py-8 space-y-4">
         <h1 className="text-2xl font-bold">我的优惠券</h1>
+
+        {/* 兑换码 */}
+        <div className="flex gap-2">
+          <input
+            value={redeemCode}
+            onChange={(e) => setRedeemCode(e.target.value)}
+            placeholder="输入兑换码"
+            className="flex-1 rounded-lg border border-input bg-card px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+          />
+          <button onClick={handleRedeem} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
+            兑换
+          </button>
+        </div>
 
         <div className="flex gap-2">
           <button

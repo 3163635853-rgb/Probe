@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CheckCircle, TrendingUp, Lightbulb, XCircle, Brain, Download } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useFetch } from "@/lib/hooks";
+import { fetchAPI } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import type { InterviewReport } from "@/lib/types";
 import {
@@ -227,17 +228,37 @@ function ReportContent() {
           </Link>
           <button
             onClick={async () => {
-              if (!shareRef.current) return;
               try {
-                const html2canvas = (await import("html2canvas")).default;
-                const canvas = await html2canvas(shareRef.current, { scale: 2 });
+                // 优先用后端生成分享图
+                const data = await fetchAPI<{ image_url: string; share_id: number }>("/share/generate-image", {
+                  method: "POST",
+                  body: JSON.stringify({ session_uuid: uuid, template: "radar" }),
+                });
+                // 记录分享行为
+                await fetchAPI("/share/record", {
+                  method: "POST",
+                  body: JSON.stringify({ share_id: data.share_id, channel: "download" }),
+                }).catch(() => {});
+                // 下载
                 const link = document.createElement("a");
                 link.download = `probe-report-${uuid}.png`;
-                link.href = canvas.toDataURL();
+                link.href = data.image_url;
                 link.click();
                 toast.success("图片已保存");
               } catch {
-                toast.error("保存图片失败");
+                // Fallback: 前端截图
+                if (!shareRef.current) { toast.error("保存图片失败"); return; }
+                try {
+                  const html2canvas = (await import("html2canvas")).default;
+                  const canvas = await html2canvas(shareRef.current, { scale: 2 });
+                  const link = document.createElement("a");
+                  link.download = `probe-report-${uuid}.png`;
+                  link.href = canvas.toDataURL();
+                  link.click();
+                  toast.success("图片已保存");
+                } catch {
+                  toast.error("保存图片失败");
+                }
               }
             }}
             className="flex-1 rounded-full border border-border py-3 font-medium hover:bg-secondary transition-colors inline-flex items-center justify-center gap-1.5"
