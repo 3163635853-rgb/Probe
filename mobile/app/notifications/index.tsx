@@ -90,8 +90,12 @@ export default function NotificationsScreen() {
                   if (!item.is_read) {
                     await fetchAPI(`/notification/${item.id}/read`, { method: "PUT" });
                   }
-                  // 如果通知有跳转目标，验证路径格式后导航
-                  if (item.data?.screen && item.data.screen.startsWith("/")) {
+                  // 白名单校验通知跳转路径
+                  const allowedPrefixes = ["/(main)/", "/interview/"];
+                  if (
+                    item.data?.screen &&
+                    allowedPrefixes.some((p) => item.data!.screen.startsWith(p))
+                  ) {
                     router.push(item.data.screen as "/" | `/${string}`);
                   }
                 }}

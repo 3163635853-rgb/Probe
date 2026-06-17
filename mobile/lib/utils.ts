@@ -4,8 +4,10 @@
  */
 export function formatRelativeDate(iso: string): string {
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return "--";
   const now = new Date();
   const diff = now.getTime() - d.getTime();
+  if (diff < 0) return "刚刚";
   const days = Math.floor(diff / 86400000);
   if (days === 0) return "今天";
   if (days === 1) return "昨天";
@@ -18,8 +20,10 @@ export function formatRelativeDate(iso: string): string {
  */
 export function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return "--";
   const now = new Date();
   const diff = now.getTime() - d.getTime();
+  if (diff < 0) return "刚刚";
   const mins = Math.floor(diff / 60000);
   if (mins < 60) return `${mins} 分钟前`;
   const hours = Math.floor(mins / 60);

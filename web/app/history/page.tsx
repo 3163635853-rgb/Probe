@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { ClipboardList, TrendingUp } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -24,11 +24,7 @@ function HistoryContent() {
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    loadPage(1);
-  }, []);
-
-  async function loadPage(p: number) {
+  const loadPage = useCallback(async (p: number) => {
     setLoading(true);
     try {
       const data = await fetchAPI<PaginatedData<InterviewHistoryItem>>(
@@ -42,7 +38,11 @@ function HistoryContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [toast]);
+
+  useEffect(() => {
+    loadPage(1);
+  }, [loadPage]);
 
   if (!loading && items.length === 0) {
     return (

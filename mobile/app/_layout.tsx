@@ -33,9 +33,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       startupDone.current = true;
       registerPushToken();
       checkAppVersion();
-      checkActiveInterview();
+      checkActiveInterview().then((uuid) => {
+        if (uuid) router.replace(`/interview/${uuid}`);
+      });
     }
-  }, [user]);
+  }, [user, router]);
 
   if (loading) {
     return (

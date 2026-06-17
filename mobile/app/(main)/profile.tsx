@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,15 +17,24 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  async function handleLogout() {
-    await logout();
-    router.replace("/(auth)/login");
+  function handleLogout() {
+    Alert.alert("退出登录", "确定要退出当前账号吗？", [
+      { text: "取消", style: "cancel" },
+      {
+        text: "退出",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/(auth)/login");
+        },
+      },
+    ]);
   }
 
   const menuItems = [
-    { icon: Crown, label: "会员中心", color: "#f59e0b", onPress: () => {} },
+    { icon: Crown, label: "会员中心", color: "#f59e0b", onPress: () => {}, coming: true },
     { icon: Bell, label: "通知", color: "#6366f1", onPress: () => router.push("/notifications") },
-    { icon: Gift, label: "邀请奖励", color: "#ec4899", onPress: () => {} },
+    { icon: Gift, label: "邀请奖励", color: "#ec4899", onPress: () => {}, coming: true },
     { icon: HelpCircle, label: "帮助与反馈", color: "#0d9488", onPress: () => router.push("/feedback") },
   ];
 
@@ -98,6 +107,9 @@ export default function ProfileScreen() {
               <Text className="flex-1 ml-3 text-sm font-medium text-foreground">
                 {item.label}
               </Text>
+              {"coming" in item && item.coming ? (
+                <Text className="text-[10px] text-muted-foreground mr-2">即将开放</Text>
+              ) : null}
               <ChevronRight size={16} color="#a8a29e" />
             </TouchableOpacity>
           ))}

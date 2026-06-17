@@ -85,9 +85,10 @@ export default function InterviewScreen() {
     return () => { sse.close(); };
   }, [uuid, router]);
 
-  useEffect(() => {
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-  }, [messages, thinking]);
+  // 消息更新时自动滚动到底部（通过 onContentSizeChange 替代 setTimeout）
+  const scrollToBottom = useCallback(() => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   const handleSend = useCallback(async (text?: string) => {
     const content = (text || input).trim();
@@ -224,6 +225,7 @@ export default function InterviewScreen() {
             />
           )}
           contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+          onContentSizeChange={scrollToBottom}
           className="flex-1"
           ListFooterComponent={thinking ? <TypingIndicator /> : null}
         />

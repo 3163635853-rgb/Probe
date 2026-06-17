@@ -47,10 +47,19 @@ export function FeedbackModal({ sessionUuid, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm">
-      <div className="w-full max-w-sm mx-4 rounded-2xl bg-card border border-border p-6 shadow-lg space-y-5 animate-fade-in-up [animation-delay:0ms] [animation-fill-mode:forwards]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-title"
+        className="w-full max-w-sm mx-4 rounded-2xl bg-card border border-border p-6 shadow-lg space-y-5 animate-fade-in-up [animation-delay:0ms] [animation-fill-mode:forwards]"
+      >
         <div className="text-center">
-          <h3 className="text-lg font-semibold">面试结束</h3>
+          <h3 id="feedback-title" className="text-lg font-semibold">面试结束</h3>
           <p className="mt-1 text-sm text-muted-foreground">给这次面试打个分吧</p>
         </div>
 

@@ -1,7 +1,6 @@
 import { fetchAPI } from "./api";
 import type { ActiveInterview } from "./types";
-import { router } from "expo-router";
-import { Alert, Linking, Platform } from "react-native";
+import { Alert, Linking } from "react-native";
 import Constants from "expo-constants";
 
 interface AppVersionResponse {
@@ -13,18 +12,17 @@ interface AppVersionResponse {
 }
 
 /**
- * 检查是否有未完成的面试，提示用户恢复
+ * 检查是否有未完成的面试
+ * 返回 session_uuid 供调用方决定跳转
  */
-export async function checkActiveInterview(): Promise<void> {
+export async function checkActiveInterview(): Promise<string | null> {
   try {
     const active = await fetchAPI<ActiveInterview | null>("/interview/active");
     if (active && active.session_uuid) {
-      // 有活跃面试，直接跳转
-      router.replace(`/interview/${active.session_uuid}`);
+      return active.session_uuid;
     }
-  } catch {
-    // 静默，不影响正常使用
-  }
+  } catch {}
+  return null;
 }
 
 /**
@@ -36,7 +34,6 @@ export async function checkAppVersion(): Promise<void> {
     const data = await fetchAPI<AppVersionResponse>("/config/app-version");
 
     if (compareVersion(currentVersion, data.min_version) < 0) {
-      // 强制更新
       Alert.alert(
         "需要更新",
         data.changelog || "请更新到最新版本以继续使用",
@@ -54,10 +51,6 @@ export async function checkAppVersion(): Promise<void> {
   }
 }
 
-/**
- * 简单版本比较 (1.0.0 < 1.0.1)
- * 返回: -1 (a < b), 0 (a == b), 1 (a > b)
- */
 function compareVersion(a: string, b: string): number {
   const pa = a.split(".").map(Number);
   const pb = b.split(".").map(Number);
