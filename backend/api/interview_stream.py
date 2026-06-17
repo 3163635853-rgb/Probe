@@ -40,14 +40,24 @@ async def _push_event(session_id: str, seq: int, event: str, data: dict) -> str:
 
 
 @router.get("/{uuid}/stream")
-async def interview_stream(uuid: str, token: str = Query(...), last_event_id: int = Header(0, alias="last-event-id")):
-    """SSE 面试流"""
-    # 验证 token
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail={"code": 40001, "message": "token 无效"})
+async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Query(None), last_event_id: int = Header(0, alias="last-event-id")):
+    """SSE 面试流（优先用 ticket 认证，fallback 到 token）"""
+    user_id = None
 
-    user_id = int(payload["sub"])
+    # 优先用一次性 ticket
+    if ticket:
+        uid = await redis_client.getdel(f"ticket:{ticket}")
+        if uid:
+            user_id = int(uid)
+
+    # fallback: 长期 token（兼容旧前端）
+    if not user_id and token:
+        payload = decode_token(token)
+        if payload and payload.get("sub"):
+            user_id = int(payload["sub"])
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail={"code": 40001, "message": "认证失败"})
 
     # 验证 session
     async with AsyncSessionLocal() as db:

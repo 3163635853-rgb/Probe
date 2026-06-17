@@ -224,3 +224,16 @@ async def update_profile(
     if new_token:
         response.headers["X-New-Token"] = new_token
     return response
+
+
+@router.post("/ticket")
+async def create_ticket(auth: tuple = Depends(get_current_user)):
+    """生成一次性短期 ticket，用于 SSE 连接认证（30s 有效，使用后即删）"""
+    import secrets
+    from db.redis import redis_client
+
+    user, _ = auth
+    ticket = secrets.token_urlsafe(32)
+    # 存 Redis，30s 过期
+    await redis_client.set(f"ticket:{ticket}", str(user.id), ex=30)
+    return {"code": 0, "data": {"ticket": ticket, "expires_in": 30}}

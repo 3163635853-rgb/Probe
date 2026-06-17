@@ -33,12 +33,15 @@ const INPUT_MAX_LENGTH = 5000;
 export default function InterviewScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [connState, setConnState] = useState<SSEConnectionState>("connecting");
   const [round, setRound] = useState(0);
+  const roundRef = useRef(0);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
   const flatListRef = useRef<FlatList>(null);
@@ -50,6 +53,7 @@ export default function InterviewScreen() {
       onQuestion(data) {
         setThinking(false);
         setRound(data.round);
+        roundRef.current = data.round;
         setMessages((prev) => [
           ...prev,
           { id: `q-${data.round}`, role: "ai", content: data.content },
@@ -69,7 +73,7 @@ export default function InterviewScreen() {
         setThinking(true);
       },
       onReport() {
-        router.replace(`/interview/${uuid}/report`);
+        routerRef.current.replace(`/interview/${uuid}/report`);
       },
       onError(data) {
         setError(data.message || "面试出现错误");
@@ -83,7 +87,7 @@ export default function InterviewScreen() {
     });
     sseRef.current = sse;
     return () => { sse.close(); };
-  }, [uuid, router]);
+  }, [uuid]);
 
   // 消息更新时自动滚动到底部（通过 onContentSizeChange 替代 setTimeout）
   const scrollToBottom = useCallback(() => {
@@ -93,11 +97,13 @@ export default function InterviewScreen() {
   const handleSend = useCallback(async (text?: string) => {
     const content = (text || input).trim();
     if (!content || sending) return;
-    setInput("");
+    // 只有手动输入时才清空输入框（语音回调传了 text，不应清用户草稿）
+    if (!text) setInput("");
     setSending(true);
     setError("");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const msgId = `a-${round}-${Date.now()}`;
+    const currentRound = roundRef.current;
+    const msgId = `a-${currentRound}-${Date.now()}`;
     setMessages((prev) => [
       ...prev,
       { id: msgId, role: "user", content },
@@ -112,7 +118,7 @@ export default function InterviewScreen() {
     } finally {
       setSending(false);
     }
-  }, [input, sending, round, uuid]);
+  }, [input, sending, uuid]);
 
   const handleSkip = useCallback(async () => {
     if (actionLoading) return;
@@ -192,7 +198,7 @@ export default function InterviewScreen() {
           </MotiView>
         )}
         {connState === "failed" && (
-          <View className="bg-destructive/10 px-4 py-3 items-center gap-2">
+          <View className="bg-accent px-4 py-3 items-center gap-2">
             <View className="flex-row items-center gap-2">
               <WifiOff size={12} color="#dc2626" />
               <Text className="text-xs text-destructive">连接失败，请检查网络</Text>
@@ -206,7 +212,7 @@ export default function InterviewScreen() {
           </View>
         )}
         {error ? (
-          <View className="bg-destructive/10 px-4 py-1.5">
+          <View className="bg-accent px-4 py-1.5">
             <Text className="text-xs text-destructive text-center">{error}</Text>
           </View>
         ) : null}
@@ -239,7 +245,7 @@ export default function InterviewScreen() {
               disabled={!isConnected}
             />
             <TextInput
-              className="flex-1 max-h-24 rounded-2xl border border-input bg-secondary/50 px-4 py-2.5 text-[15px] text-foreground"
+              className="flex-1 max-h-24 rounded-2xl border border-input bg-secondary px-4 py-2.5 text-[15px] text-foreground"
               placeholder="输入你的回答..."
               placeholderTextColor="#a8a29e"
               value={input}

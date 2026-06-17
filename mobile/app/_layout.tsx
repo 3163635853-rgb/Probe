@@ -27,15 +27,22 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, segments, router]);
 
-  // 登录后执行 startup checks（仅一次）
+  // 登录后执行 startup checks（仅一次per session）
   useEffect(() => {
-    if (user && !startupDone.current) {
+    if (!user) {
+      // 登出时重置，下次登录重新执行 startup
+      startupDone.current = false;
+      return;
+    }
+    if (!startupDone.current) {
       startupDone.current = true;
-      registerPushToken();
-      checkAppVersion();
-      checkActiveInterview().then((uuid) => {
-        if (uuid) router.replace(`/interview/${uuid}`);
-      });
+      // 按顺序执行：版本检查优先（可能阻断），然后检查活跃面试
+      (async () => {
+        await checkAppVersion(); // 如果需要强制更新，Alert 会阻断后续
+        registerPushToken();
+        const activeUuid = await checkActiveInterview();
+        if (activeUuid) router.replace(`/interview/${activeUuid}`);
+      })();
     }
   }, [user, router]);
 

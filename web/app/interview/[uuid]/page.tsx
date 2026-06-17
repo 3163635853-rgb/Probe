@@ -117,46 +117,57 @@ function InterviewSession() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const sseRef = useRef<ReturnType<typeof createSSE> | null>(null);
 
-  // SSE 连接
-  // NOTE: EventSource 不支持自定义 header，token 通过 query param 传递。
-  // 后端应将此 token 视为短期凭证（仅限 SSE 连接用途），或改为 ticket 机制。
+  // SSE 连接 — 使用一次性 ticket 而非长期 token
   useEffect(() => {
-    const token = getToken();
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
-    const url = `${baseUrl}/interview/${uuid}/stream?token=${token}`;
+    let cancelled = false;
 
-    sseRef.current = createSSE(url, {
-      onQuestion(data: SSEQuestionEvent) {
-        dispatch({ type: "ADD_AI_MSG", content: data.content });
-      },
-      onStatus(data: SSEStatusEvent) {
-        dispatch({ type: "SET_STATUS", data });
-      },
-      onThinking() {
-        dispatch({ type: "SET_THINKING", value: true });
-      },
-      onEvaluation(data: { round: number; score: number; brief: string }) {
-        dispatch({ type: "SET_SCORE", data });
-      },
-      onReport(data) {
-        reportUrlRef.current = `/interview/${data.session_uuid}/report`;
-        setShowFeedback(true);
-      },
-      onDone() {
-        dispatch({ type: "SET_DONE" });
-        if (!reportUrlRef.current) {
-          reportUrlRef.current = `/interview/${uuid}/report`;
-          setShowFeedback(true);
-        }
-      },
-      onError() {},
-      onStateChange(s) {
-        dispatch({ type: "SET_CONNECTION", state: s });
-      },
-    });
+    async function connect() {
+      try {
+        const { ticket } = await fetchAPI<{ ticket: string }>("/auth/ticket", { method: "POST" });
+        if (cancelled) return;
+        const url = `${baseUrl}/interview/${uuid}/stream?ticket=${ticket}`;
+        sseRef.current = createSSE(url, {
+          onQuestion(data: SSEQuestionEvent) {
+            dispatch({ type: "ADD_AI_MSG", content: data.content });
+          },
+          onStatus(data: SSEStatusEvent) {
+            dispatch({ type: "SET_STATUS", data });
+          },
+          onThinking() {
+            dispatch({ type: "SET_THINKING", value: true });
+          },
+          onEvaluation(data: { round: number; score: number; brief: string }) {
+            dispatch({ type: "SET_SCORE", data });
+          },
+          onReport(data) {
+            reportUrlRef.current = `/interview/${data.session_uuid}/report`;
+            setShowFeedback(true);
+          },
+          onDone() {
+            dispatch({ type: "SET_DONE" });
+            if (!reportUrlRef.current) {
+              reportUrlRef.current = `/interview/${uuid}/report`;
+              setShowFeedback(true);
+            }
+          },
+          onError() {},
+          onStateChange(s) {
+            dispatch({ type: "SET_CONNECTION", state: s });
+          },
+        });
+      } catch (e: any) {
+        toast.error(e.message || "连接面试服务失败");
+      }
+    }
 
-    return () => sseRef.current?.close();
-  }, [uuid, router]);
+    connect();
+
+    return () => {
+      cancelled = true;
+      sseRef.current?.close();
+    };
+  }, [uuid, toast]);
 
   // 自动滚动
   useEffect(() => {

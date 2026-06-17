@@ -158,12 +158,13 @@ export default function HomeScreen() {
                 >
                   <TouchableOpacity
                     className="flex-row items-center rounded-xl border border-border bg-white p-4"
-                    onPress={() =>
+                    onPress={
                       item.status === "completed"
-                        ? router.push(`/interview/${item.session_uuid}/report`)
-                        : null
+                        ? () => router.push(`/interview/${item.session_uuid}/report`)
+                        : undefined
                     }
-                    activeOpacity={0.7}
+                    disabled={item.status !== "completed"}
+                    activeOpacity={item.status === "completed" ? 0.7 : 1}
                   >
                     <View className="flex-1">
                       <Text className="text-sm font-medium text-foreground">

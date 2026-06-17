@@ -73,12 +73,13 @@ export default function HistoryScreen() {
             >
               <TouchableOpacity
                 className="mb-3 rounded-xl border border-border bg-white p-4 active:scale-[0.98]"
-                onPress={() =>
+                onPress={
                   item.status === "completed"
-                    ? router.push(`/interview/${item.session_uuid}/report`)
-                    : null
+                    ? () => router.push(`/interview/${item.session_uuid}/report`)
+                    : undefined
                 }
-                activeOpacity={0.8}
+                disabled={item.status !== "completed"}
+                activeOpacity={item.status === "completed" ? 0.8 : 1}
               >
                 <View className="flex-row items-center">
                   {/* Score Badge */}

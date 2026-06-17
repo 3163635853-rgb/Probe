@@ -84,7 +84,7 @@ export default function NotificationsScreen() {
             >
               <TouchableOpacity
                 className={`px-5 py-4 border-b border-border ${
-                  !item.is_read ? "bg-accent/30" : "bg-white"
+                  !item.is_read ? "bg-accent" : "bg-white"
                 }`}
                 onPress={async () => {
                   if (!item.is_read) {

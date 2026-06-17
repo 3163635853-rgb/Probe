@@ -86,38 +86,33 @@ export function createSSE(url: string, handlers: SSEHandlers) {
     });
 
     es.addEventListener("question", (event) => {
-      if (event.data) {
-        trackEventId(event);
-        try { handlers.onQuestion?.(JSON.parse(event.data)); } catch {}
-      }
+      if (closed || !event.data) return;
+      trackEventId(event);
+      try { handlers.onQuestion?.(JSON.parse(event.data)); } catch {}
     });
 
     es.addEventListener("status", (event) => {
-      if (event.data) {
-        trackEventId(event);
-        try { handlers.onStatus?.(JSON.parse(event.data)); } catch {}
-      }
+      if (closed || !event.data) return;
+      trackEventId(event);
+      try { handlers.onStatus?.(JSON.parse(event.data)); } catch {}
     });
 
     es.addEventListener("evaluation", (event) => {
-      if (event.data) {
-        trackEventId(event);
-        try { handlers.onEvaluation?.(JSON.parse(event.data)); } catch {}
-      }
+      if (closed || !event.data) return;
+      trackEventId(event);
+      try { handlers.onEvaluation?.(JSON.parse(event.data)); } catch {}
     });
 
     es.addEventListener("thinking", (event) => {
-      if (event.data) {
-        trackEventId(event);
-        try { handlers.onThinking?.(JSON.parse(event.data)); } catch {}
-      }
+      if (closed || !event.data) return;
+      trackEventId(event);
+      try { handlers.onThinking?.(JSON.parse(event.data)); } catch {}
     });
 
     es.addEventListener("report", (event) => {
-      if (event.data) {
-        trackEventId(event);
-        try { handlers.onReport?.(JSON.parse(event.data)); } catch {}
-      }
+      if (closed || !event.data) return;
+      trackEventId(event);
+      try { handlers.onReport?.(JSON.parse(event.data)); } catch {}
     });
 
     es.addEventListener("done", () => {

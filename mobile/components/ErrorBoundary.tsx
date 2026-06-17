@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <View className="flex-1 items-center justify-center bg-background px-8">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-destructive/10 mb-4">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-accent mb-4">
             <AlertCircle size={28} color="#dc2626" />
           </View>
           <Text className="text-lg font-semibold text-foreground mb-2">
