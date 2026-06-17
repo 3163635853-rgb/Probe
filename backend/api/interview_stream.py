@@ -392,6 +392,23 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     # 清理 Redis
     await redis_client.delete(f"active_session:{user_id}")
 
+    # 推送通知（App 端）
+    try:
+        async with AsyncSessionLocal() as db:
+            from models.user import User
+            user_obj = await db.get(User, user_id)
+            if user_obj and user_obj.push_token:
+                from services.push import send_push
+                score = report_data.get("overall_score", 0)
+                await send_push(
+                    user_obj.push_token,
+                    title="面试报告已生成",
+                    body=f"本次得分 {score} 分，点击查看详情",
+                    data={"screen": "report", "session_uuid": session_uuid},
+                )
+    except Exception:
+        pass  # 推送失败不影响主流程
+
     seq += 1
     yield await _push_event(session_uuid, seq, "report", {
         "session_uuid": session_uuid,

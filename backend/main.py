@@ -24,6 +24,7 @@ from api.coupon import router as coupon_router
 from api.achievement import router as achievement_router
 from api.share import router as share_router
 from api.file import router as file_router
+from api.user import router as user_router
 from middleware.rate_limit import RateLimitMiddleware
 
 setup_logging(debug=settings.DEBUG)
@@ -69,6 +70,7 @@ app.include_router(coupon_router)
 app.include_router(achievement_router)
 app.include_router(share_router)
 app.include_router(file_router)
+app.include_router(user_router)
 
 
 @app.exception_handler(HTTPException)

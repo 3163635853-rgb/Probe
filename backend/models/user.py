@@ -21,4 +21,7 @@ class User(Base, FullTimestampMixin):
     membership_expire_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     total_interviews: Mapped[int] = mapped_column(Integer, default=0)
     weak_points: Mapped[Optional[dict]] = mapped_column(JSON)
+    push_token: Mapped[Optional[str]] = mapped_column(String(256))
+    device_id: Mapped[Optional[str]] = mapped_column(String(64))
+    platform: Mapped[Optional[str]] = mapped_column(String(16))
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)

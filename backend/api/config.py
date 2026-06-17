@@ -82,3 +82,18 @@ async def get_difficulties(db: AsyncSession = Depends(get_db)):
             for d in diffs
         ],
     }
+
+
+@router.get("/app-version")
+async def get_app_version():
+    """App 版本检查，用于强制更新判断"""
+    return {
+        "code": 0,
+        "data": {
+            "latest_version": "1.0.0",
+            "min_version": "1.0.0",
+            "force_update": False,
+            "update_url": "",
+            "changelog": "",
+        },
+    }
