@@ -8,6 +8,7 @@ import {
 import { useAuth } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
 import { PageTransition } from "./PageTransition";
+import { useFetch } from "@/lib/hooks";
 
 const NAV_ITEMS = [
   { href: "/interview/setup", label: "面试", icon: Home },
@@ -25,6 +26,8 @@ const MORE_ITEMS = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { data: unreadData } = useFetch<{ count: number }>("/notification/unread-count");
+  const unreadCount = unreadData?.count || 0;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -43,12 +46,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
+                  {item.href === "/notifications" && unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-destructive text-[10px] text-destructive-foreground font-bold">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -83,12 +91,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
+                className={`relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="text-[10px]">{item.label}</span>
+                {item.href === "/notifications" && unreadCount > 0 && (
+                  <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-destructive" />
+                )}
               </Link>
             );
           })}

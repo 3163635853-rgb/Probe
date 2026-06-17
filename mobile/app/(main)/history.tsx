@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,6 +5,7 @@ import { MotiView } from "moti";
 import { SkeletonList } from "@/components/Skeleton";
 import { FileText, Clock, ChevronRight } from "lucide-react-native";
 import { useFetch } from "@/lib/hooks";
+import { useRefresh } from "@/lib/useRefresh";
 import { formatRelativeDate, getScoreColorClass } from "@/lib/utils";
 import type { InterviewHistoryItem, PaginatedData } from "@/lib/types";
 
@@ -14,13 +14,7 @@ export default function HistoryScreen() {
   const { data, loading, refetch } = useFetch<PaginatedData<InterviewHistoryItem>>(
     "/interview/history?page=1&page_size=50"
   );
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
+  const { refreshing, onRefresh } = useRefresh(refetch);
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Header */}

@@ -191,7 +191,7 @@ function SetupFlow() {
         )}
         {quota && quota.can_start_interview && (
           <p className="text-sm text-muted-foreground">
-            本月剩余 {quota.quota_remaining === -1 ? "无限" : `${quota.quota_remaining} 次`}面试
+            本月剩余 {quota.unlimited ? "无限" : `${quota.quota_remaining} 次`}面试
           </p>
         )}
 

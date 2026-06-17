@@ -22,8 +22,17 @@ export default function PricingPage() {
   );
 }
 
+interface Subscription {
+  plan: string;
+  status: string;
+  expire_at: string;
+  auto_renew: boolean;
+  days_remaining: number;
+}
+
 function PricingContent() {
   const { data: plans, loading } = useFetch<Plan[]>("/payment/plans");
+  const { data: sub } = useFetch<Subscription | null>("/subscription/current");
   const toast = useToast();
 
   async function handlePurchase(productType: string) {
@@ -65,6 +74,35 @@ function PricingContent() {
           <h1 className="mt-4 text-3xl font-bold">升级套餐</h1>
           <p className="mt-2 text-muted-foreground">解锁无限面试，成为面试达人</p>
         </div>
+
+        {/* 当前订阅状态 */}
+        {sub && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-5 flex items-center justify-between">
+            <div>
+              <p className="font-medium">当前套餐：{sub.plan === "monthly" ? "月卡" : sub.plan === "yearly" ? "年卡" : sub.plan}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {sub.days_remaining > 0 ? `${sub.days_remaining} 天后到期` : "已过期"} · {sub.auto_renew ? "自动续费已开" : "不自动续费"}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  await fetchAPI("/subscription/auto-renew", {
+                    method: "PUT",
+                    body: JSON.stringify({ auto_renew: !sub.auto_renew }),
+                  });
+                  toast.success(sub.auto_renew ? "已关闭自动续费" : "已开启自动续费");
+                  window.location.reload();
+                } catch (e: any) {
+                  toast.error(e.message || "操作失败");
+                }
+              }}
+              className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
+            >
+              {sub.auto_renew ? "关闭续费" : "开启续费"}
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {items.map((plan) => {

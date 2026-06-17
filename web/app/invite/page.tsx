@@ -37,7 +37,7 @@ function InviteContent() {
   async function redeem() {
     if (!redeemCode.trim()) return;
     try {
-      await fetchAPI("/coupon/redeem", {
+      await fetchAPI("/invite/redeem", {
         method: "POST",
         body: JSON.stringify({ code: redeemCode.trim() }),
       });

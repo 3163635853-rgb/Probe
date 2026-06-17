@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +10,7 @@ import { useRouter } from "expo-router";
 import { MotiView } from "moti";
 import { ArrowLeft, Bell, CheckCheck } from "lucide-react-native";
 import { useFetch } from "@/lib/hooks";
+import { useRefresh } from "@/lib/useRefresh";
 import { fetchAPI } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
 import type { PaginatedData } from "@/lib/types";
@@ -30,13 +30,7 @@ export default function NotificationsScreen() {
   const { data, loading, refetch } = useFetch<PaginatedData<Notification>>(
     "/notification/list?page=1&page_size=50"
   );
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
+  const { refreshing, onRefresh } = useRefresh(refetch);
 
   async function markAllRead() {
     try {

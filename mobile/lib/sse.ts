@@ -53,21 +53,38 @@ export function createSSE(url: string, handlers: SSEHandlers) {
   async function connect() {
     if (closed) return;
 
-    const token = await getToken();
-    if (!token) {
-      setState("failed");
-      return;
+    // 获取一次性 ticket（30s 有效），比 token 在 URL 更安全
+    let ticket: string | null = null;
+    try {
+      const res = await fetchAPI<{ ticket: string }>("/auth/ticket", { method: "POST" });
+      ticket = res.ticket;
+    } catch {
+      // ticket 获取失败，回退到 header 认证
+      const token = await getToken();
+      if (!token) {
+        setState("failed");
+        return;
+      }
     }
 
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-    };
+    if (closed) return;
+
+    const headers: Record<string, string> = {};
+    if (!ticket) {
+      const token = await getToken();
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
     if (lastEventId) {
       headers["Last-Event-ID"] = lastEventId;
     }
 
+    // URL 拼接 ticket（如果有）
+    const connectUrl = ticket
+      ? `${url}${url.includes("?") ? "&" : "?"}ticket=${ticket}`
+      : url;
+
     setState("connecting");
-    es = new EventSource<CustomEventNames>(url, {
+    es = new EventSource<CustomEventNames>(connectUrl, {
       headers,
       // react-native-sse 不支持自动重连，我们手动实现
     });

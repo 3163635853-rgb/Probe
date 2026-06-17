@@ -16,6 +16,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, nickname?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthState>({
   user: null,
   loading: true,
   login: async () => {},
+  register: async () => {},
   logout: async () => {},
 });
 
@@ -82,6 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
     await setToken(res.token);
+    // 登录响应已包含基础用户信息，立即设置避免二次请求
+    // validateToken 会在 AppState 回前台时拉取完整 User
+    const u = await fetchAPI<User>("/auth/me");
+    setUser(u);
+  }, []);
+
+  const register = useCallback(async (email: string, password: string, nickname?: string) => {
+    const res = await fetchAPI<LoginResponse>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password, nickname }),
+    });
+    await setToken(res.token);
     const u = await fetchAPI<User>("/auth/me");
     setUser(u);
   }, []);
@@ -92,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

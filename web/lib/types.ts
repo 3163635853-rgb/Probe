@@ -165,6 +165,7 @@ export interface SSEErrorEvent {
 // Quota
 export interface QuotaStatus {
   plan: string;
+  unlimited: boolean;
   quota_total: number;
   quota_used: number;
   quota_remaining: number;
