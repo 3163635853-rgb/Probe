@@ -4,18 +4,19 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
 
+const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { logged, loading } = useAuth();
   const router = useRouter();
-  const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
-    if (!loading && !logged && !isDev) {
+    if (!loading && !logged && !BYPASS_AUTH) {
       router.replace("/login");
     }
-  }, [loading, logged, router, isDev]);
+  }, [loading, logged, router]);
 
-  if (loading && !isDev) {
+  if (loading && !BYPASS_AUTH) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -23,7 +24,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!logged && !isDev) return null;
+  if (!logged && !BYPASS_AUTH) return null;
 
   return <>{children}</>;
 }

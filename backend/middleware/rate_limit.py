@@ -41,9 +41,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 limit = 30
 
         try:
-            current = await redis_client.incr(key)
-            if current == 1:
-                await redis_client.expire(key, 60)
+            # Lua 原子操作：INCR + 设 TTL（仅首次）
+            lua_script = """
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+    redis.call('EXPIRE', KEYS[1], 60)
+end
+return current
+"""
+            current = await redis_client.eval(lua_script, 1, key)
             if current > limit:
                 return JSONResponse(
                     status_code=429,

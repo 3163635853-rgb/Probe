@@ -42,7 +42,9 @@ type Action =
   | { type: "SET_DONE" }
   | { type: "SET_SCORE"; data: { round: number; score: number; brief: string } };
 
-let msgId = Date.now();
+function nextId() {
+  return Date.now() + Math.random();
+}
 
 function reducer(state: InterviewState, action: Action): InterviewState {
   switch (action.type) {
@@ -52,7 +54,7 @@ function reducer(state: InterviewState, action: Action): InterviewState {
         thinking: false,
         inputDisabled: false,
         lastScore: null,
-        messages: [...state.messages, { id: ++msgId, role: "ai", content: action.content, typing: true }],
+        messages: [...state.messages, { id: nextId(), role: "ai", content: action.content, typing: true }],
       };
     case "FINISH_TYPING":
       return {
@@ -65,7 +67,7 @@ function reducer(state: InterviewState, action: Action): InterviewState {
       return {
         ...state,
         inputDisabled: true,
-        messages: [...state.messages, { id: ++msgId, role: "user", content: action.content }],
+        messages: [...state.messages, { id: nextId(), role: "user", content: action.content }],
       };
     case "SET_STATUS":
       return { ...state, status: action.data };
@@ -116,6 +118,8 @@ function InterviewSession() {
   const sseRef = useRef<ReturnType<typeof createSSE> | null>(null);
 
   // SSE 连接
+  // NOTE: EventSource 不支持自定义 header，token 通过 query param 传递。
+  // 后端应将此 token 视为短期凭证（仅限 SSE 连接用途），或改为 ticket 机制。
   useEffect(() => {
     const token = getToken();
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -454,19 +458,27 @@ function ChatBubble({ message, onTypingDone }: { message: Message; onTypingDone:
 
 // 打字机效果
 function TypeWriter({ text }: { text: string }) {
-  const [displayed, setDisplayed] = useReducer(
-    (_: string, action: string) => action,
-    ""
-  );
+  const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {
     let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length) clearInterval(interval);
-    }, 30);
-    return () => clearInterval(interval);
+    let frameId: number;
+    let lastTime = 0;
+    const CHAR_INTERVAL = 30;
+
+    function tick(time: number) {
+      if (time - lastTime >= CHAR_INTERVAL) {
+        i++;
+        setDisplayed(text.slice(0, i));
+        lastTime = time;
+      }
+      if (i < text.length) {
+        frameId = requestAnimationFrame(tick);
+      }
+    }
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
   }, [text]);
 
   return <p className="whitespace-pre-wrap leading-relaxed">{displayed}<span className="animate-pulse text-primary">|</span></p>;

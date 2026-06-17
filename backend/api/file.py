@@ -58,13 +58,21 @@ async def upload_file(
 
 
 @router.get("/{file_uuid}")
-async def get_file(file_uuid: str):
-    """获取文件"""
-    # 遍历子目录查找
-    for type_dir in UPLOAD_DIR.iterdir():
-        if type_dir.is_dir():
-            for f in type_dir.iterdir():
-                if f.stem == file_uuid:
-                    return FileResponse(f)
+async def get_file(file_uuid: str, auth: tuple = Depends(get_current_user)):
+    """获取文件（需登录）"""
+    import re
+    # 校验 UUID 格式，防止路径遍历
+    if not re.match(r'^[a-f0-9\-]{36}$', file_uuid):
+        raise HTTPException(status_code=400, detail={"code": 40102, "message": "无效的文件 ID"})
+
+    # 按已知子目录精确查找
+    for type_name in ALLOWED_TYPES:
+        type_dir = UPLOAD_DIR / type_name
+        if not type_dir.exists():
+            continue
+        for ext in ALLOWED_TYPES[type_name]:
+            candidate = type_dir / f"{file_uuid}.{ext}"
+            if candidate.exists():
+                return FileResponse(candidate)
 
     raise HTTPException(status_code=404, detail={"code": 40401, "message": "文件不存在"})

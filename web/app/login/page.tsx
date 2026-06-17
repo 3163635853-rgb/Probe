@@ -25,7 +25,15 @@ export default function LoginPage() {
   // 微信回调处理：/login?code=xxx&state=xxx
   useEffect(() => {
     const code = searchParams.get("code");
+    const state = searchParams.get("state");
     if (!code) return;
+    // 验证 OAuth state 防止 CSRF
+    const savedState = sessionStorage.getItem("oauth_state");
+    if (state && savedState && state !== savedState) {
+      setError("登录状态异常，请重试");
+      return;
+    }
+    sessionStorage.removeItem("oauth_state");
     setLoading(true);
     fetchAPI<LoginResponse>("/auth/wechat", {
       method: "POST",
@@ -66,7 +74,9 @@ export default function LoginPage() {
   useEffect(() => {
     const appId = process.env.NEXT_PUBLIC_WECHAT_APPID || "APPID";
     const redirectUri = encodeURIComponent(window.location.origin + "/login");
-    setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=probe#wechat_redirect`);
+    const state = crypto.randomUUID().slice(0, 16);
+    sessionStorage.setItem("oauth_state", state);
+    setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`);
   }, []);
 
   return (

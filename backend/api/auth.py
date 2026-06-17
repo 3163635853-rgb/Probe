@@ -112,6 +112,8 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     """邮箱注册"""
     if len(req.password) < 6:
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "密码至少6位"})
+    if len(req.password) > 72:
+        raise HTTPException(status_code=400, detail={"code": 40102, "message": "密码不能超过72位"})
 
     # 检查邮箱是否已注册
     result = await db.execute(select(User).where(User.email == req.email))

@@ -63,43 +63,53 @@ async def interview_stream(uuid: str, token: str = Query(...), last_event_id: in
 
     async def event_generator():
         seq = last_event_id
+        lock_key = f"sse_lock:{uuid}"
 
-        # 重连恢复: 从 Redis sse_log 重放
-        if last_event_id > 0:
-            logs = await redis_client.lrange(f"sse_log:{uuid}", 0, -1)
-            for log_entry in logs:
-                parts = log_entry.split("|", 2)
-                if len(parts) == 3 and int(parts[0]) > last_event_id:
-                    yield f"id: {parts[0]}\nevent: {parts[1]}\ndata: {parts[2]}\n\n"
-                    seq = max(seq, int(parts[0]))
+        # 排他锁：同一 session 只允许一个 SSE 连接
+        acquired = await redis_client.set(lock_key, "1", ex=7200, nx=True)
+        if not acquired:
+            yield f"id: 0\nevent: error\ndata: {{\"code\":\"DUPLICATE_CONNECTION\",\"message\":\"已有连接在使用中\",\"retry\":false}}\n\n"
+            return
 
-        # Connected event
-        seq += 1
-        yield await _push_event(uuid, seq, "connected", {"session_uuid": uuid, "resumed_from": last_event_id})
-
-        # 运行 Agent 循环，穿插心跳
-        agent_gen = _run_agent_loop(uuid, user_id, session.id, seq)
         try:
-            while True:
-                try:
-                    event_str = await asyncio.wait_for(agent_gen.__anext__(), timeout=HEARTBEAT_INTERVAL)
-                    yield event_str
-                    seq += 1
-                except asyncio.TimeoutError:
-                    yield ":ping\n\n"
-                except StopAsyncIteration:
-                    break
-                except Exception as e:
-                    logger.error(f"Agent loop error: {e}")
-                    seq += 1
-                    yield await _push_event(uuid, seq, "error", {
-                        "code": "INTERNAL_ERROR",
-                        "message": "服务出现异常，请稍后重试",
-                        "retry": True,
-                    })
-                    break
+            # 重连恢复: 从 Redis sse_log 重放
+            if last_event_id > 0:
+                logs = await redis_client.lrange(f"sse_log:{uuid}", 0, -1)
+                for log_entry in logs:
+                    parts = log_entry.split("|", 2)
+                    if len(parts) == 3 and int(parts[0]) > last_event_id:
+                        yield f"id: {parts[0]}\nevent: {parts[1]}\ndata: {parts[2]}\n\n"
+                        seq = max(seq, int(parts[0]))
+
+            # Connected event
+            seq += 1
+            yield await _push_event(uuid, seq, "connected", {"session_uuid": uuid, "resumed_from": last_event_id})
+
+            # 运行 Agent 循环，穿插心跳
+            agent_gen = _run_agent_loop(uuid, user_id, session.id, seq)
+            try:
+                while True:
+                    try:
+                        event_str = await asyncio.wait_for(agent_gen.__anext__(), timeout=HEARTBEAT_INTERVAL)
+                        yield event_str
+                        seq += 1
+                    except asyncio.TimeoutError:
+                        yield ":ping\n\n"
+                    except StopAsyncIteration:
+                        break
+                    except Exception as e:
+                        logger.error(f"Agent loop error: {e}")
+                        seq += 1
+                        yield await _push_event(uuid, seq, "error", {
+                            "code": "INTERNAL_ERROR",
+                            "message": "服务出现异常，请稍后重试",
+                            "retry": True,
+                        })
+                        break
+            finally:
+                await agent_gen.aclose()
         finally:
-            await agent_gen.aclose()
+            await redis_client.delete(lock_key)
 
     return StreamingResponse(
         event_generator(),

@@ -48,8 +48,9 @@ async def stream_chat(messages: list[dict], params: dict | None = None) -> Async
                     yield delta.content
             _token_usage["total_calls"] += 1
             return
-        except Exception:
+        except Exception as e:
             if attempt == 0:
+                logger.warning(f"LLM stream_chat retry after error: {e}")
                 await asyncio.sleep(2)
             else:
                 raise
@@ -66,8 +67,9 @@ async def chat(messages: list[dict], params: dict | None = None) -> str:
             )
             _record_usage(response)
             return response.choices[0].message.content or ""
-        except Exception:
+        except Exception as e:
             if attempt == 0:
+                logger.warning(f"LLM chat retry after error: {e}")
                 await asyncio.sleep(2)
             else:
                 raise

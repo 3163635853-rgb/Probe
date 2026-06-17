@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 import { fetchAPI } from "@/lib/api";
 import { useToast } from "./Toast";
@@ -16,6 +16,13 @@ export function FeedbackModal({ sessionUuid, onClose }: Props) {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const toast = useToast();
+
+  // Escape 键关闭
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   async function submit() {
     if (rating === 0) {
