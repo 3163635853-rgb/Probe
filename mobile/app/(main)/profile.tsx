@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { useState } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Alert, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,16 +7,32 @@ import {
   Crown,
   Bell,
   Gift,
+  Award,
   HelpCircle,
   LogOut,
   ChevronRight,
+  Pencil,
 } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
+import { fetchAPI } from "@/lib/api";
 import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [nickname, setNickname] = useState(user?.nickname || "");
+
+  async function saveNickname() {
+    if (!nickname.trim()) return;
+    try {
+      await fetchAPI("/auth/profile", {
+        method: "PUT",
+        body: JSON.stringify({ nickname: nickname.trim() }),
+      });
+      setEditing(false);
+    } catch {}
+  }
 
   function handleLogout() {
     Alert.alert("退出登录", "确定要退出当前账号吗？", [
@@ -32,9 +49,10 @@ export default function ProfileScreen() {
   }
 
   const menuItems = [
-    { icon: Crown, label: "会员中心", color: "#f59e0b", onPress: () => {}, coming: true },
+    { icon: Crown, label: "会员中心", color: "#f59e0b", onPress: () => router.push("/membership") },
+    { icon: Award, label: "成就", color: "#8b5cf6", onPress: () => router.push("/achievements") },
     { icon: Bell, label: "通知", color: "#6366f1", onPress: () => router.push("/notifications") },
-    { icon: Gift, label: "邀请奖励", color: "#ec4899", onPress: () => {}, coming: true },
+    { icon: Gift, label: "邀请奖励", color: "#ec4899", onPress: () => router.push("/invite") },
     { icon: HelpCircle, label: "帮助与反馈", color: "#0d9488", onPress: () => router.push("/feedback") },
   ];
 
@@ -67,9 +85,27 @@ export default function ProfileScreen() {
               {user?.nickname?.[0] || "U"}
             </Text>
           </LinearGradient>
-          <Text className="mt-4 text-xl font-bold text-foreground">
-            {user?.nickname || "用户"}
-          </Text>
+          {editing ? (
+            <View className="mt-4 flex-row items-center gap-2">
+              <TextInput
+                className="h-10 w-40 rounded-lg border border-input bg-white px-3 text-base text-foreground text-center"
+                value={nickname}
+                onChangeText={setNickname}
+                maxLength={20}
+                autoFocus
+              />
+              <TouchableOpacity onPress={saveNickname} className="px-3 py-2 rounded-lg bg-primary">
+                <Text className="text-xs font-semibold text-white">保存</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => setEditing(true)} className="mt-4 flex-row items-center gap-1.5">
+              <Text className="text-xl font-bold text-foreground">
+                {user?.nickname || "用户"}
+              </Text>
+              <Pencil size={14} color="#a8a29e" />
+            </TouchableOpacity>
+          )}
           <View className="mt-2 flex-row items-center gap-1.5 rounded-full bg-accent px-3 py-1">
             <Crown size={12} color="#92400e" />
             <Text className="text-xs font-medium text-accent-foreground">
@@ -107,9 +143,6 @@ export default function ProfileScreen() {
               <Text className="flex-1 ml-3 text-sm font-medium text-foreground">
                 {item.label}
               </Text>
-              {"coming" in item && item.coming ? (
-                <Text className="text-[10px] text-muted-foreground mr-2">即将开放</Text>
-              ) : null}
               <ChevronRight size={16} color="#a8a29e" />
             </TouchableOpacity>
           ))}

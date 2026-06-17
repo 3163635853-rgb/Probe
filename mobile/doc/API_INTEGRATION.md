@@ -25,19 +25,13 @@
 | 17 | GET /speech/tts | components/AudioPlayer.tsx | URL 方式 |
 | 18 | PUT /notification/read-all + /notification/{id}/read | app/notifications/ | 正常 |
 
-## 需要接入（11 个）
+## 需要接入（5 个 — P2/P3）
 
 | # | 端点 | 优先级 | 接入方案 |
 |---|------|--------|---------|
-| 1 | POST /api/auth/register | P0 | 登录页加"注册"tab |
-| 2 | POST /api/auth/ticket | P0 | SSE 连接前获取 ticket 替代 token |
-| 3 | PUT /api/auth/profile | P1 | 个人中心加编辑昵称 |
-| 4 | GET /interview/stats | P1 | 首页进步曲线图 |
-| 5 | GET /notification/list + unread-count | P1 | 已有页面，加 unread-count badge |
-| 6 | POST /feedback | P2 | 修正请求体（加 rating + feedback_type） |
-| 7 | GET /payment/plans + POST /payment/create | P2 | 会员中心页面 |
-| 8 | GET /subscription/current | P2 | 个人中心会员状态 |
-| 9 | GET /invite/my-code + POST /invite/redeem | P2 | 邀请奖励页 |
+| 1 | GET /payment/plans + POST /payment/create | P2 | 会员中心页面 |
+| 2 | GET /subscription/current | P2 | 个人中心会员状态 |
+| 3 | GET /invite/my-code + POST /invite/redeem | P2 | 邀请奖励页 |
 | 10 | GET /coupon/mine + POST /coupon/redeem | P3 | 优惠券页面 |
 | 11 | GET /achievement/list | P3 | 成就系统 |
 

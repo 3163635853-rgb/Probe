@@ -10,6 +10,8 @@ import { createSSE, type SSEConnectionState } from "@/lib/sse";
 import type { SSEQuestionEvent, SSEStatusEvent } from "@/lib/types";
 import { Brain, Send, SkipForward, X, Wifi, WifiOff } from "lucide-react";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { VoiceInput } from "@/components/VoiceInput";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { useToast } from "@/components/Toast";
 
 // State
@@ -339,6 +341,12 @@ function InterviewSession() {
             >
               <Send className="w-5 h-5" />
             </button>
+            <VoiceInput
+              disabled={state.inputDisabled}
+              onTranscribed={(text) => {
+                if (inputRef.current) inputRef.current.value = text;
+              }}
+            />
             <button
               onClick={skipQuestion}
               disabled={state.inputDisabled}
@@ -461,6 +469,9 @@ function ChatBubble({ message, onTypingDone }: { message: Message; onTypingDone:
           <TypeWriter text={message.content} />
         ) : (
           <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+        )}
+        {isAi && !message.typing && (
+          <AudioPlayer text={message.content} />
         )}
       </div>
     </div>

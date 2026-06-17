@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { Play, Zap, Trophy, TrendingUp, ArrowRight } from "lucide-react-native";
+import { Play, Zap, TrendingUp, ArrowRight, Bell } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
 import { useFetch } from "@/lib/hooks";
 import type { QuotaStatus, PaginatedData, InterviewHistoryItem, InterviewStats } from "@/lib/types";
@@ -13,6 +13,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { data: quota } = useFetch<QuotaStatus>("/quota/status");
   const { data: stats } = useFetch<InterviewStats>("/interview/stats?limit=10");
+  const { data: unread } = useFetch<{ count: number }>("/notification/unread-count");
   const { data: recent } = useFetch<PaginatedData<InterviewHistoryItem>>(
     "/interview/history?page=1&page_size=3"
   );
@@ -31,12 +32,29 @@ export default function HomeScreen() {
           transition={{ type: "timing", duration: 500 }}
           className="px-6 pt-6 pb-4"
         >
-          <Text className="text-sm text-muted-foreground">
-            {getGreeting()}
-          </Text>
-          <Text className="text-2xl font-bold text-foreground mt-1">
-            {user?.nickname || "面试者"}
-          </Text>
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-sm text-muted-foreground">
+                {getGreeting()}
+              </Text>
+              <Text className="text-2xl font-bold text-foreground mt-1">
+                {user?.nickname || "面试者"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => router.push("/notifications")}
+              className="relative p-2"
+            >
+              <Bell size={22} color="#57534e" />
+              {unread && unread.count > 0 && (
+                <View className="absolute top-1 right-1 h-4 w-4 items-center justify-center rounded-full bg-destructive">
+                  <Text className="text-[9px] font-bold text-white">
+                    {unread.count > 9 ? "9+" : unread.count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </MotiView>
 
         {/* Hero Card — Start Interview */}
