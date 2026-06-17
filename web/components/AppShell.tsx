@@ -65,6 +65,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             {user && (
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                title="个人资料"
+              >
+                <User className="w-3.5 h-3.5" />
+              </Link>
+            )}
+            {user && (
               <button
                 onClick={logout}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"

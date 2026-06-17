@@ -18,6 +18,7 @@ import { fetchAPI } from "@/lib/api";
 export default function FeedbackScreen() {
   const router = useRouter();
   const [content, setContent] = useState("");
+  const [rating, setRating] = useState(5);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +30,7 @@ export default function FeedbackScreen() {
     try {
       await fetchAPI("/feedback", {
         method: "POST",
-        body: JSON.stringify({ content: content.trim(), type: "suggestion" }),
+        body: JSON.stringify({ comment: content.trim(), rating, feedback_type: "suggestion" }),
       });
       setSubmitted(true);
     } catch (e: unknown) {

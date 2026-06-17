@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { ClipboardList, TrendingUp } from "lucide-react";
+import { ClipboardList, TrendingUp, Trophy, BarChart3 } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useToast } from "@/components/Toast";
+import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
 import type { InterviewHistoryItem, PaginatedData } from "@/lib/types";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -67,7 +68,7 @@ function HistoryContent() {
         <h1 className="text-2xl font-bold">面试记录</h1>
 
         {/* 趋势图 */}
-        <ScoreTrend items={items} />
+        <ScoreTrend />
 
         <div className="space-y-3">
           {items.map((item) => (
@@ -118,26 +119,38 @@ function formatDate(iso: string): string {
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
-function ScoreTrend({ items }: { items: InterviewHistoryItem[] }) {
-  const scored = items
-    .filter((i) => i.final_score !== null)
-    .reverse()
-    .map((i) => ({
-      date: new Date(i.started_at).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
-      score: i.final_score,
-    }));
+interface StatsData {
+  items: { session_uuid: string; score: number; mode: string; date: string }[];
+  total_completed: number;
+  avg_score: number;
+  best_score: number;
+}
 
-  if (scored.length < 2) return null;
+function ScoreTrend() {
+  const { data: stats } = useFetch<StatsData>("/interview/stats?limit=20");
+
+  if (!stats || stats.items.length < 2) return null;
+
+  const chartData = stats.items.map((i) => ({
+    date: new Date(i.date).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" }),
+    score: i.score,
+  }));
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <TrendingUp className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium">成绩趋势</span>
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">成绩趋势</span>
+        </div>
+        <div className="flex gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><BarChart3 className="w-3 h-3" /> 均分 {stats.avg_score}</span>
+          <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> 最高 {stats.best_score}</span>
+        </div>
       </div>
       <div className="h-40">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={scored}>
+          <LineChart data={chartData}>
             <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
             <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" width={30} />
             <Tooltip

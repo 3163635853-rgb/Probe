@@ -15,24 +15,33 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
+  const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleLogin() {
+  async function handleSubmit() {
     if (!email.trim() || !password.trim()) {
       setError("请填写邮箱和密码");
+      return;
+    }
+    if (mode === "register" && password.length < 6) {
+      setError("密码至少 6 位");
       return;
     }
     setError("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
+      if (mode === "login") {
+        await login(email.trim(), password);
+      } else {
+        await register(email.trim(), password);
+      }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "登录失败");
+      setError(e instanceof Error ? e.message : (mode === "login" ? "登录失败" : "注册失败"));
     } finally {
       setLoading(false);
     }
@@ -124,9 +133,9 @@ export default function LoginScreen() {
               </MotiView>
             ) : null}
 
-            {/* Login Button */}
+            {/* Submit Button */}
             <TouchableOpacity
-              onPress={handleLogin}
+              onPress={handleSubmit}
               disabled={loading}
               activeOpacity={0.85}
             >
@@ -139,22 +148,26 @@ export default function LoginScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text className="text-base font-bold text-white">登录</Text>
+                  <Text className="text-base font-bold text-white">
+                    {mode === "login" ? "登录" : "注册"}
+                  </Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>
           </MotiView>
 
-          {/* Footer */}
+          {/* Footer — Toggle mode */}
           <MotiView
             from={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ type: "timing", duration: 600, delay: 500 }}
             className="mt-10 items-center"
           >
-            <Text className="text-sm text-muted-foreground">
-              其他登录方式即将开放
-            </Text>
+            <Pressable onPress={() => setMode(mode === "login" ? "register" : "login")}>
+              <Text className="text-sm text-muted-foreground">
+                {mode === "login" ? "没有账号？立即注册" : "已有账号？去登录"}
+              </Text>
+            </Pressable>
           </MotiView>
         </View>
       </LinearGradient>
