@@ -74,7 +74,7 @@ export default function LoginPage() {
   useEffect(() => {
     const appId = process.env.NEXT_PUBLIC_WECHAT_APPID || "APPID";
     const redirectUri = encodeURIComponent(window.location.origin + "/login");
-    const state = crypto.randomUUID().slice(0, 16);
+    const state = Math.random().toString(36).slice(2, 18);
     sessionStorage.setItem("oauth_state", state);
     setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`);
   }, []);

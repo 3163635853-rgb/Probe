@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     SESSION_TTL: int = 7200  # 2h, Redis session/memory expiry
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:3001,http://68.183.224.222:3100"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
