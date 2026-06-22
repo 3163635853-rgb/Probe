@@ -75,10 +75,10 @@ async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Qu
         seq = last_event_id
         lock_key = f"sse_lock:{uuid}"
 
-        # 排他锁：同一 session 只允许一个 SSE 连接
-        acquired = await redis_client.set(lock_key, "1", ex=7200, nx=True)
+        # 排他锁：短 TTL + 心跳续期（客户端断开后锁快速过期，允许重连）
+        acquired = await redis_client.set(lock_key, "1", ex=30, nx=True)
         if not acquired:
-            yield f"id: 0\nevent: error\ndata: {{\"code\":\"DUPLICATE_CONNECTION\",\"message\":\"已有连接在使用中\",\"retry\":false}}\n\n"
+            yield f"id: 0\nevent: error\ndata: {{\"code\":\"DUPLICATE_CONNECTION\",\"message\":\"已有连接在使用中，请稍后重试\",\"retry\":true}}\n\n"
             return
 
         try:
@@ -105,6 +105,7 @@ async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Qu
                         seq += 1
                     except asyncio.TimeoutError:
                         yield ":ping\n\n"
+                        await redis_client.expire(lock_key, 30)  # 心跳续锁
                     except StopAsyncIteration:
                         break
                     except asyncio.CancelledError:

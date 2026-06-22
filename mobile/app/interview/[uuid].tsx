@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Pressable,
   Alert,
+  AppState,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -49,44 +50,61 @@ export default function InterviewScreen() {
 
   useEffect(() => {
     const streamUrl = `${BASE_URL}/interview/${uuid}/stream`;
-    const sse = createSSE(streamUrl, {
-      onQuestion(data) {
-        setThinking(false);
-        setRound(data.round);
-        roundRef.current = data.round;
-        setMessages((prev) => [
-          ...prev,
-          { id: `q-${data.round}`, role: "ai", content: data.content },
-        ]);
-      },
-      onEvaluation(data) {
-        if (data.visible) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id.startsWith(`a-${data.round}-`) ? { ...m, score: data.score } : m
-            )
-          );
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-      },
-      onThinking() {
-        setThinking(true);
-      },
-      onReport() {
-        routerRef.current.replace(`/interview/${uuid}/report`);
-      },
-      onError(data) {
-        setError(data.message || "面试出现错误");
-      },
-      onStateChange(s) {
-        setConnState(s);
-      },
-      onDone() {
-        setConnState("closed");
-      },
+    const connectSSE = () => {
+      const sse = createSSE(streamUrl, {
+        onQuestion(data) {
+          setThinking(false);
+          setRound(data.round);
+          roundRef.current = data.round;
+          setMessages((prev) => [
+            ...prev,
+            { id: `q-${data.round}`, role: "ai", content: data.content },
+          ]);
+        },
+        onEvaluation(data) {
+          if (data.visible) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id.startsWith(`a-${data.round}-`) ? { ...m, score: data.score } : m
+              )
+            );
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+        },
+        onThinking() {
+          setThinking(true);
+        },
+        onReport() {
+          routerRef.current.replace(`/interview/${uuid}/report`);
+        },
+        onError(data) {
+          setError(data.message || "面试出现错误");
+        },
+        onStateChange(s) {
+          setConnState(s);
+        },
+        onDone() {
+          setConnState("closed");
+        },
+      });
+      sseRef.current = sse;
+      return sse;
+    };
+
+    const sse = connectSSE();
+
+    // iOS 后台杀连接：回到前台时主动重连
+    const appStateListener = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && connState !== "connected" && connState !== "closed") {
+        sseRef.current?.close();
+        connectSSE();
+      }
     });
-    sseRef.current = sse;
-    return () => { sse.close(); };
+
+    return () => {
+      sse.close();
+      appStateListener.remove();
+    };
   }, [uuid]);
 
   // 消息更新时自动滚动到底部（通过 onContentSizeChange 替代 setTimeout）
