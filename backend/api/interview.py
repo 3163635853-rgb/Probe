@@ -80,7 +80,13 @@ async def start_interview(
         status="ongoing",
     )
     db.add(session)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        # DB 提交失败：补偿回滚 Redis 配额
+        await redis_client.incr(f"quota:{user.id}:{month}")
+        await redis_client.delete(f"active_session:{user.id}")
+        raise HTTPException(status_code=500, detail={"code": 50001, "message": "创建面试失败，请重试"})
     await db.refresh(session)
 
     # 更新 active_session 为真实 session_uuid
@@ -207,7 +213,7 @@ async def get_report(
         pos = await db.get(Position, session.position_id)
         position_name = pos.name if pos else ""
 
-    report = session.report_json
+    report = {**(session.report_json or {})}
     report.update({
         "session_uuid": session.uuid,
         "industry": industry_name,

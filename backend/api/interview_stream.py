@@ -107,6 +107,8 @@ async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Qu
                         yield ":ping\n\n"
                     except StopAsyncIteration:
                         break
+                    except asyncio.CancelledError:
+                        raise  # 不吞没取消信号，让客户端断开正常传播
                     except Exception as e:
                         logger.error(f"Agent loop error: {e}")
                         seq += 1

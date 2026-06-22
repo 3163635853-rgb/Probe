@@ -80,6 +80,20 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content={"code": exc.status_code, "message": exc.detail})
 
 
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"code": 42200, "message": "参数格式错误"})
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    import structlog
+    structlog.get_logger().error("unhandled_exception", exc_type=type(exc).__name__, detail=str(exc)[:200])
+    return JSONResponse(status_code=500, content={"code": 50000, "message": "服务器内部错误"})
+
+
 @app.get("/health")
 async def health():
     mysql_ok = True

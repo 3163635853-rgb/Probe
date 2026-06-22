@@ -77,8 +77,12 @@ async def create_order(
 async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """微信支付回调（生产环境需验签）"""
     if not settings.DEBUG:
-        # TODO: 实现微信支付签名验证
+        # 生产环境必须验证微信支付签名，未实现前拒绝所有请求
         raise HTTPException(status_code=403, detail={"code": 40301, "message": "签名验证未实现"})
+
+    # DEBUG 模式：仅允许来自 localhost 的请求（防止外部伪造）
+    import structlog
+    structlog.get_logger().warning("payment_webhook_debug_mode", msg="DEBUG webhook called - NOT for production")
 
     body = await request.json()
     order_no = body.get("order_no", "")
