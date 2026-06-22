@@ -52,41 +52,44 @@ export function createSSE(url: string, handlers: SSEHandlers) {
     setState("connected");
   };
 
+  function safeParse(data: string): any {
+    try { return JSON.parse(data); } catch { return null; }
+  }
+
   // 服务端推送的 connected 事件（含 session_uuid 和 resumed_from）
   eventSource.addEventListener("connected", (e) => {
     setState("connected");
-    handlers.onConnected?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onConnected?.(d);
   });
 
   eventSource.addEventListener("question", (e) => {
-    handlers.onQuestion?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onQuestion?.(d);
   });
 
   eventSource.addEventListener("status", (e) => {
-    handlers.onStatus?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onStatus?.(d);
   });
 
   eventSource.addEventListener("evaluation", (e) => {
-    handlers.onEvaluation?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onEvaluation?.(d);
   });
 
   eventSource.addEventListener("thinking", (e) => {
-    handlers.onThinking?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onThinking?.(d);
   });
 
   eventSource.addEventListener("report", (e) => {
-    handlers.onReport?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onReport?.(d);
   });
 
   eventSource.addEventListener("reminder", (e) => {
-    handlers.onReminder?.(JSON.parse(e.data));
+    const d = safeParse(e.data); if (d) handlers.onReminder?.(d);
   });
 
   eventSource.addEventListener("error", (e) => {
     const me = e as MessageEvent;
-    // SSE spec: error event with no data = connection error (由 onerror 处理)
     if (!me.data) return;
-    handlers.onError?.(JSON.parse(me.data));
+    const d = safeParse(me.data); if (d) handlers.onError?.(d);
   });
 
   eventSource.addEventListener("done", () => {

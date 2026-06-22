@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, TouchableOpacity, ActivityIndicator } from "react-native";
 import { MotiView } from "moti";
 import { Mic, MicOff } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { startRecording, stopRecording } from "@/lib/audio";
+import { startRecording, stopRecording, cancelRecording } from "@/lib/audio";
 import { uploadFile } from "@/lib/api";
 
 interface VoiceRecorderProps {
@@ -20,6 +20,13 @@ interface TranscribeResponse {
 export function VoiceRecorder({ onTranscribed, onError, disabled }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // 组件卸载时清理录音资源
+  useEffect(() => {
+    return () => {
+      cancelRecording();
+    };
+  }, []);
 
   async function handlePress() {
     if (disabled) return;

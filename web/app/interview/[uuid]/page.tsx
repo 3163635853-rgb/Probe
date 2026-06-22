@@ -186,7 +186,7 @@ function InterviewSession() {
 
   const sendAnswer = useCallback(async () => {
     const content = inputRef.current?.value.trim();
-    if (!content) return;
+    if (!content || state.inputDisabled) return;
     dispatch({ type: "ADD_USER_MSG", content });
     if (inputRef.current) inputRef.current.value = "";
     try {
@@ -196,8 +196,9 @@ function InterviewSession() {
       });
     } catch (e: any) {
       toast.error(e.message || "发送失败，请重试");
+      dispatch({ type: "SET_INPUT_DISABLED", value: false });
     }
-  }, [uuid, toast]);
+  }, [uuid, toast, state.inputDisabled]);
 
   const skipQuestion = useCallback(async () => {
     dispatch({ type: "SET_INPUT_DISABLED", value: true });

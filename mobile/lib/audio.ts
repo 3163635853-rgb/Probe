@@ -44,3 +44,12 @@ export async function stopRecording(): Promise<{
   const mimeType = Platform.OS === "ios" ? "audio/m4a" : "audio/webm";
   return { uri, mimeType };
 }
+
+/** 取消/清理录音资源（组件卸载时调用） */
+export async function cancelRecording(): Promise<void> {
+  if (!recording) return;
+  try {
+    await recording.stopAndUnloadAsync();
+  } catch {}
+  recording = null;
+}
