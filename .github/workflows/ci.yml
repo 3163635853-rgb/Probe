@@ -47,9 +47,9 @@ jobs:
           pip install uv
           uv pip install --system -r pyproject.toml
 
-      - name: Run linter
+      - name: Syntax check all Python files
         working-directory: backend
-        run: python -m py_compile main.py
+        run: find . -name "*.py" -not -path "./.venv/*" | xargs python -m py_compile
 
       - name: Run migrations
         working-directory: backend

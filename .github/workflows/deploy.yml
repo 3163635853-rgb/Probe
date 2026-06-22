@@ -20,5 +20,13 @@ jobs:
             git pull origin main
             docker compose build --no-cache backend web
             docker compose up -d
+            # 等待 backend 健康后再跑迁移
+            echo "Waiting for backend health..."
+            for i in $(seq 1 30); do
+              if docker compose exec -T backend curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+                break
+              fi
+              sleep 2
+            done
             docker compose exec -T backend alembic upgrade head
             echo "Deployed at $(date)"

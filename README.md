@@ -17,13 +17,14 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 
 | 层 | 选型 |
 |---|---|
-| 后端 | Python 3.11 + FastAPI |
+| 后端 | Python 3.12 + FastAPI |
 | 智能体 | 自研 Agent Loop (ReAct + 记忆) |
-| LLM | DeepSeek API |
+| LLM | MiMo (小米) — OpenAI 兼容接口 |
 | 向量检索 | FAISS (Phase 1) → Milvus (Phase 2+) |
 | 关系库 | MySQL 8.0 |
 | 缓存 | Redis 7 |
-| 前端 Web | Next.js 14 + Tailwind CSS |
+| 前端 Web | Next.js 16 + Tailwind CSS |
+| 前端 App | Expo (React Native) |
 | 部署 | Docker Compose + Caddy |
 
 ## 项目结构
@@ -32,19 +33,20 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 Probe/
 ├── backend/          # FastAPI 后端 + Agent 核心
 │   ├── agent/        # 智能体 (planner/prober/evaluator/reporter)
-│   ├── api/          # 路由
+│   ├── api/          # 路由 (12 模块, 47 端点)
 │   ├── models/       # SQLAlchemy ORM
-│   ├── services/     # LLM/语音等外部服务
-│   ├── knowledge/    # 向量检索 + embedding
-│   └── memory/       # 工作记忆
-├── web/              # Next.js 前端
-│   ├── app/          # 页面 (login/interview/report/history)
+│   ├── services/     # LLM/语音/推送
+│   ├── knowledge/    # FAISS 向量检索 + embedding
+│   └── memory/       # Redis 工作记忆
+├── web/              # Next.js 前端 (11 页面)
+│   ├── app/          # 页面
 │   ├── components/   # UI 组件
 │   └── lib/          # API/SSE/Auth 封装
+├── mobile/           # Expo React Native App (17 页面)
+│   ├── app/          # expo-router 文件路由
+│   ├── components/   # 原生 UI 组件
+│   └── lib/          # API/SSE/Auth/Audio
 ├── doc/              # 架构文档
-│   ├── architecture/ # API/DB/系统设计/Prompt
-│   ├── implementation/ # 部署/任务清单
-│   └── business/     # 竞品/市场
 ├── docker-compose.yml
 └── docker-compose.dev.yml
 ```
