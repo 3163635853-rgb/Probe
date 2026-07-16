@@ -5,7 +5,7 @@
 - [DATABASE.md](./architecture/DATABASE.md) — 数据库全量设计
 - [API_APP.md](./architecture/API_APP.md) — App 独有接口 + 差异说明
 - [PROMPTS.md](./architecture/PROMPTS.md) — Prompt 工程
-- [BACKEND.md](../backend/BACKEND.md) — 后端接口完整文档 (48 端点)
+- [BACKEND.md](../backend/BACKEND.md) — 后端接口完整文档 (51 端点)
 
 ## implementation/ — 实施方案
 - [PHASE1_TASKS.md](./implementation/PHASE1_TASKS.md) — Phase 1 总协调

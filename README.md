@@ -40,10 +40,10 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 
 ```
 代码量:    13,000+ 行 (Python + TypeScript)
-后端:      70+ 个源文件, 48 个 API 端点, 16 个路由模块
+后端:      70+ 个源文件, 51 个 API 端点, 17 个路由模块
 Web 前端:  11 个页面, 10 个组件
 App:       17 个页面, 7 个组件
-数据库:    19 张 MySQL 表 + Redis 缓存 + FAISS 向量索引
+数据库:    21 张 MySQL 表 + Redis 缓存 + FAISS 向量索引
 文档:      完整架构设计 + API 规范 + 任务清单
 ```
 
@@ -85,8 +85,8 @@ App:       17 个页面, 7 个组件
 Probe/
 ├── backend/              # Python FastAPI 后端
 │   ├── agent/            # 智能体核心 (planner/prober/evaluator/reporter)
-│   ├── api/              # 16 个路由模块, 48 个端点
-│   ├── models/           # SQLAlchemy ORM (19 表)
+│   ├── api/              # 17 个路由模块, 51 个端点
+│   ├── models/           # SQLAlchemy ORM (21 表)
 │   ├── services/         # LLM / 语音 / 推送
 │   ├── knowledge/        # FAISS 向量检索 + embedding
 │   ├── memory/           # Redis 工作记忆
@@ -147,7 +147,7 @@ npx expo start
 
 | 文档 | 内容 |
 |------|------|
-| [后端接口文档](backend/BACKEND.md) | 48 个端点完整规范 (请求/响应/错误码) |
+| [后端接口文档](backend/BACKEND.md) | 51 个端点完整规范 (请求/响应/错误码) |
 | [系统架构](doc/architecture/ARCHITECTURE.md) | Agent 状态机、技术决策、数据流 |
 | [数据库设计](doc/architecture/DATABASE.md) | 19 表 DDL + Redis Key + FAISS |
 | [App API](doc/architecture/API_APP.md) | App 独有接口 + 差异说明 |

@@ -3,6 +3,7 @@ from models.achievement import Achievement, UserAchievement
 from models.config import DifficultyConfig, Industry, InterviewMode, Position
 from models.coupon import Coupon, UserCoupon
 from models.feedback import Feedback
+from models.growth import GrowthProfile, GrowthTask
 from models.interview import InterviewRound, InterviewSession
 from models.invite import InviteCode, InviteRecord
 from models.knowledge import KnowledgeQuestion
@@ -13,7 +14,7 @@ from models.user import User
 
 __all__ = [
     "Achievement", "UserAchievement", "DifficultyConfig", "Industry", "InterviewMode",
-    "Position", "Coupon", "UserCoupon", "Feedback", "InterviewRound", "InterviewSession",
+    "Position", "Coupon", "UserCoupon", "Feedback", "GrowthProfile", "GrowthTask", "InterviewRound", "InterviewSession",
     "InviteCode", "InviteRecord", "KnowledgeQuestion", "Notification", "Payment",
     "Subscription", "ShareRecord", "User",
 ]

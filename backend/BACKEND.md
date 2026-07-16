@@ -482,3 +482,23 @@ voice: "female"(默认)/"male"/具体 Azure voice ID
 ```json
 → {"status":"ok","mysql":"ok","redis":"ok"}
 ```
+
+---
+
+## 16. 成长中心 `/api/growth`
+
+### GET /growth/overview
+
+返回成长等级、XP、连续训练、每周目标、七日训练活动、能力聚焦和今日任务。首次访问会创建成长档案和当日任务。
+
+### POST /growth/tasks/{task_id}/complete
+
+完成报告复盘或专项训练任务，幂等发放 XP。面试任务必须真实完成一次面试后由系统自动结算。
+
+### PUT /growth/weekly-goal
+
+```json
+{"weekly_goal":5}
+```
+
+目标范围为每周 1-14 次。

@@ -4,7 +4,7 @@
 >
 > 分支：`main`
 >
-> 规模：48 个 API/健康路由、19 张业务表、Web + Expo App 双端
+> 规模：51 个 API/健康路由、21 张业务表、Web + Expo App 双端
 
 ![Probe AI 面试官全链路](../assets/probe-end-to-end-chain.png)
 
@@ -15,9 +15,9 @@
 | 区域 | 结果 | 说明 |
 |---|---|---|
 | Backend compile | PASS | 全部 Python 文件可编译，FastAPI 可导入 |
-| Backend tests | PASS | 16 个测试通过 |
-| API contract | PASS | 48 条路由的方法与路径完整匹配 |
-| ORM metadata | PASS | 19 张业务表全部注册 |
+| Backend tests | PASS | 20 个测试通过 |
+| API contract | PASS | 51 条路由的方法与路径完整匹配 |
+| ORM metadata | PASS | 21 张业务表全部注册 |
 | Alembic | PASS | Head 为 `7c2d9b4f8a11`，完整 MySQL 离线 SQL 可生成 |
 | Python audit | PASS | `pip-audit` 无已知漏洞 |
 | Web | PASS | ESLint 零错误、Next.js 生产构建成功、npm audit 为 0 |
@@ -214,7 +214,36 @@ Reporter 生成：
 
 展示报告、历史和趋势图。完成面试后成就模块可读取并展示已达成状态。
 
-## 10. 微信支付链路
+## 10. 成长中心链路
+
+App 1.1.0 新增底部 Tab「成长」，全部视觉元素使用 `lucide-react-native`、Moti、SVG、渐变和原生 View，不使用 AI 生成 UI 图标。
+
+1. `GET /api/growth/overview` 读取或创建成长档案。
+2. 后端汇总最近七天真实面试次数和均分。
+3. 最近八份报告的能力维度被归一化为 0-100，自动识别优先突破项。
+4. 每天生成面试、复盘和薄弱项专项三类任务。
+5. 当天完成面试后，面试任务自动完成并发放 XP。
+6. 手动任务通过 `POST /api/growth/tasks/{id}/complete` 完成。
+7. XP 每 500 点提升一级；任务完成会更新连续训练天数和历史最长纪录。
+8. `PUT /api/growth/weekly-goal` 设置每周 1-14 次训练目标。
+9. App 使用等级光环、进度条、训练脉冲柱状图、任务完成弹性动画和触觉反馈展示状态。
+
+```mermaid
+flowchart LR
+    I[真实面试与报告] --> O[Growth Overview]
+    O --> D[七日活动]
+    O --> F[薄弱维度]
+    O --> T[每日任务]
+    T --> XP[XP + 等级]
+    T --> S[连续训练]
+    G[每周目标] --> O
+    XP --> UI[App 成长中心动效界面]
+    S --> UI
+    D --> UI
+    F --> UI
+```
+
+## 11. 微信支付链路
 
 ```mermaid
 sequenceDiagram
@@ -251,7 +280,7 @@ sequenceDiagram
 
 `auto_renew` 当前表示续费提醒偏好，不会在未取得微信委托扣款授权时自动扣款。
 
-## 11. 分享增长链路
+## 12. 分享增长链路
 
 1. 报告页调用 `POST /api/share/generate-image`。
 2. 后端验证报告归属和完成状态。
@@ -264,7 +293,7 @@ sequenceDiagram
 
 Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 
-## 12. 头像与文件链路
+## 13. 头像与文件链路
 
 1. 用户上传头像到 `POST /api/file/upload?type=avatar`。
 2. 后端校验扩展名和 5 MB 大小限制。
@@ -275,7 +304,7 @@ Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 
 这避免了生产环境中相对 URL 指向 Web 域名导致头像 404，也避免容器重建丢失上传文件。
 
-## 13. 邀请、优惠券和通知链路
+## 14. 邀请、优惠券和通知链路
 
 ### 邀请
 
@@ -297,9 +326,9 @@ Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 - App 启动时上报 push token 和设备平台。
 - Web 顶部铃铛展示未读 badge。
 
-## 14. 数据层
+## 15. 数据层
 
-### MySQL：19 张业务表
+### MySQL：21 张业务表
 
 用户、配置、面试会话、面试轮次、知识题库、支付、订阅、邀请、通知、优惠券、成就、反馈和分享记录。
 
@@ -318,7 +347,7 @@ Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 
 用于题库 embedding 和相似问题检索，向 Planner/Prober 提供岗位和能力维度相关问题。
 
-## 15. API 路由清单
+## 16. API 路由清单
 
 | 模块 | 数量 | 路由范围 |
 |---|---:|---|
@@ -337,10 +366,11 @@ Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 | Share | 4 | `/api/share/*` |
 | File | 2 | `/api/file/*` |
 | User device | 1 | `/api/user/push-token` |
+| Growth | 3 | `/api/growth/*` |
 | Health | 1 | `/health` |
-| **合计** | **48** | |
+| **合计** | **51** | |
 
-## 16. CI/CD 链路
+## 17. CI/CD 链路
 
 ```mermaid
 flowchart LR
@@ -364,7 +394,7 @@ flowchart LR
 
 Deploy 工作流会先检查 `SERVER_IP`、`SERVER_USER` 和 `SSH_KEY`。未配置时明确记录 notice 并安全跳过，避免把代码发布错误与仓库基础设施未配置混为一谈。
 
-## 17. 发布所需秘密配置
+## 18. 发布所需秘密配置
 
 生产 `.env` 必须配置：
 
@@ -391,7 +421,7 @@ secrets/wechat/wechatpay_public_key.pem
 
 秘密目录、`.env`、上传文件和分享图片都已排除在 Git 跟踪之外。
 
-## 18. 本轮复检命令
+## 19. 本轮复检命令
 
 ```bash
 # Backend
@@ -411,6 +441,7 @@ npm run build
 cd mobile
 npm audit --omit=dev --audit-level=moderate
 npm run check
+npm run bundle:check
 
 # Infrastructure
 caddy validate --config Caddyfile --adapter caddyfile
@@ -419,7 +450,7 @@ docker compose -f docker-compose.dev.yml config --quiet
 git diff --check
 ```
 
-## 19. 运行环境说明
+## 20. 运行环境说明
 
 本机 Docker Desktop Linux Engine 因 Windows Store WSL 组件状态为 `Modified, NeedsRemediation` 而无法启动。Caddy、Compose、迁移 SQL、代码、测试和构建均已验证；Linux 容器实跑需要先修复本机 WSL 或由 GitHub Actions/生产服务器完成。
 

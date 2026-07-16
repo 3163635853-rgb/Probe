@@ -48,3 +48,7 @@ npx eas build --profile production # 正式包
 - react-native-sse — SSE polyfill（RN 无原生 EventSource）
 - expo-secure-store — token 安全存储
 - expo-audio — 语音录制/播放
+
+## 成长中心（1.1.0）
+
+新增等级 XP、连续训练、每周目标、七日训练脉冲、薄弱能力聚焦和每日任务。UI 仅使用 lucide-react-native、Moti、SVG 和原生 View 动效。

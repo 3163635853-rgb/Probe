@@ -114,6 +114,9 @@ jobs:
       - name: Typecheck, lint, and Expo Doctor
         working-directory: mobile
         run: npm run check
+      - name: Export Android and iOS bundles
+        working-directory: mobile
+        run: npm run bundle:check
 
   compose-config:
     runs-on: ubuntu-latest

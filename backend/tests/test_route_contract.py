@@ -33,7 +33,11 @@ EXPECTED_ROUTES = {
     ("GET", "/api/share/image/{share_uuid}.png"),
     ("POST", "/api/share/record"), ("GET", "/api/share/callback/{share_id}"),
     ("POST", "/api/file/upload"), ("GET", "/api/file/{file_uuid}"),
-    ("POST", "/api/user/push-token"), ("GET", "/health"),
+    ("POST", "/api/user/push-token"),
+    ("GET", "/api/growth/overview"),
+    ("POST", "/api/growth/tasks/{task_id}/complete"),
+    ("PUT", "/api/growth/weekly-goal"),
+    ("GET", "/health"),
 }
 
 

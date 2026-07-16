@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { Play, Zap, TrendingUp, ArrowRight, Bell } from "lucide-react-native";
+import { Play, Zap, TrendingUp, ArrowRight, Bell, Sparkles } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
 import { useFetch } from "@/lib/hooks";
 import type { QuotaStatus, PaginatedData, InterviewHistoryItem, InterviewStats } from "@/lib/types";
@@ -135,6 +135,36 @@ export default function HomeScreen() {
               </Text>
             </Text>
           </View>
+        </MotiView>
+
+        <MotiView
+          from={{ opacity: 0, translateY: 14 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 500, delay: 260 }}
+          className="mx-6 mb-5"
+        >
+          <TouchableOpacity onPress={() => router.push("/(main)/growth")} activeOpacity={0.8}>
+            <LinearGradient
+              colors={["#ecfdf5", "#fffbeb"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="flex-row items-center rounded-2xl border border-emerald-100 p-4"
+            >
+              <MotiView
+                from={{ rotate: "-6deg", scale: 0.95 }}
+                animate={{ rotate: "6deg", scale: 1.05 }}
+                transition={{ type: "timing", duration: 1000, loop: true }}
+                className="h-12 w-12 items-center justify-center rounded-2xl bg-white"
+              >
+                <Sparkles size={22} color="#0f766e" />
+              </MotiView>
+              <View className="ml-3 flex-1">
+                <Text className="text-sm font-bold text-foreground">成长中心已开启</Text>
+                <Text className="mt-1 text-xs text-muted-foreground">等级、连续训练、薄弱项与每日任务</Text>
+              </View>
+              <ArrowRight size={17} color="#0f766e" />
+            </LinearGradient>
+          </TouchableOpacity>
         </MotiView>
 
         {/* Recent Interviews */}

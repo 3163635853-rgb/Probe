@@ -1,9 +1,9 @@
 # 数据库设计
 
 > 最后更新: 2026-06-12
-> 状态: 19 张业务表全部建成（另含 alembic_version），Alembic 管理迁移
+> 状态: 21 张业务表全部建成（另含 alembic_version），Alembic 管理迁移
 
-**已建成的表：** users, industries, positions, interview_modes, difficulty_configs, interview_sessions, interview_rounds, knowledge_questions, feedbacks, payments, subscriptions, invite_codes, invite_records, notifications, coupons, user_coupons, achievements, user_achievements, share_records
+**已建成的表：** users, industries, positions, interview_modes, difficulty_configs, interview_sessions, interview_rounds, knowledge_questions, feedbacks, payments, subscriptions, invite_codes, invite_records, notifications, coupons, user_coupons, achievements, user_achievements, share_records, growth_profiles, growth_tasks
 
 ---
 
@@ -417,6 +417,14 @@ CREATE TABLE user_achievements (
   UNIQUE KEY uk_user_achievement (user_id, achievement_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
+### growth_profiles — 用户成长档案
+
+保存 XP、等级所需累计值、连续训练、历史最长连续天数和每周训练目标。`user_id` 唯一。
+
+### growth_tasks — 每日成长任务
+
+每天为用户生成面试、报告复盘和薄弱维度专项任务。唯一约束 `(user_id, task_date, task_type)` 防止重复生成；任务完成时原子发放 XP 并更新连续训练。
 
 ### share_records — 分享图片与传播统计
 

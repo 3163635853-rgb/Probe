@@ -9,4 +9,4 @@ def test_application_routes_and_models_are_registered():
     assert "/health" in paths
     assert "share_records" in Base.metadata.tables
 
-    assert len(Base.metadata.tables) == 19
+    assert len(Base.metadata.tables) == 21

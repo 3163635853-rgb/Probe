@@ -180,3 +180,54 @@ export interface InterviewStats {
   avg_score: number;
   best_score: number;
 }
+
+// Growth Center
+export interface GrowthProfileSnapshot {
+  level: number;
+  title: string;
+  xp: number;
+  level_xp: number;
+  next_level_xp: number;
+  progress_percent: number;
+  current_streak: number;
+  longest_streak: number;
+  weekly_goal: number;
+  weekly_completed: number;
+  weekly_progress_percent: number;
+}
+
+export interface GrowthActivityDay {
+  date: string;
+  weekday: string;
+  count: number;
+  avg_score: number;
+  is_today: boolean;
+}
+
+export interface GrowthDimension {
+  name: string;
+  score: number;
+  status: string;
+}
+
+export interface GrowthTask {
+  id: number;
+  task_type: "interview" | "review" | "focus";
+  title: string;
+  description: string;
+  dimension: string | null;
+  target_count: number;
+  progress: number;
+  xp_reward: number;
+  status: "pending" | "completed";
+  completed_at: string | null;
+}
+
+export interface GrowthOverview {
+  profile: GrowthProfileSnapshot;
+  weekly_activity: GrowthActivityDay[];
+  focus_dimensions: GrowthDimension[];
+  daily_tasks: GrowthTask[];
+  daily_completed: number;
+  daily_total: number;
+}

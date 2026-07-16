@@ -47,7 +47,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint app/ lib/ components/ --ext .ts,.tsx",
     "check": "npm run typecheck && npm run lint && npm run doctor",
-    "doctor": "expo-doctor"
+    "doctor": "expo-doctor",
+    "bundle:android": "expo export --platform android --output-dir .expo/export-android-check",
+    "bundle:ios": "expo export --platform ios --output-dir .expo/export-ios-check",
+    "bundle:check": "npm run bundle:android && npm run bundle:ios"
   },
   "private": true,
   "overrides": {
