@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Mic, Square, Play, Pause, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Mic, Square, Loader2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getToken } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/api";
 
 interface VoiceInputProps {
   onTranscribed: (text: string) => void;
@@ -36,7 +37,7 @@ export function VoiceInput({ onTranscribed, disabled }: VoiceInputProps) {
 
       mediaRecorder.start();
       setRecording(true);
-    } catch (e: any) {
+    } catch {
       toast.error("无法访问麦克风");
     }
   }
@@ -64,8 +65,8 @@ export function VoiceInput({ onTranscribed, disabled }: VoiceInputProps) {
       } else {
         toast.warning("未识别到语音内容");
       }
-    } catch (e: any) {
-      toast.error(e.message || "语音识别失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "语音识别失败"));
     } finally {
       setProcessing(false);
     }

@@ -42,7 +42,7 @@ function HistoryContent() {
   }, [toast]);
 
   useEffect(() => {
-    loadPage(1);
+    void Promise.resolve().then(() => loadPage(1));
   }, [loadPage]);
 
   if (!loading && items.length === 0) {

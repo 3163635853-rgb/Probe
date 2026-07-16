@@ -237,13 +237,18 @@ function ReportContent() {
                 // 记录分享行为
                 await fetchAPI("/share/record", {
                   method: "POST",
-                  body: JSON.stringify({ share_id: data.share_id, channel: "download" }),
+                  body: JSON.stringify({ share_id: data.share_id, channel: "link" }),
                 }).catch(() => {});
                 // 下载
+                const imageResponse = await fetch(data.image_url);
+                if (!imageResponse.ok) throw new Error("分享图下载失败");
+                const imageBlob = await imageResponse.blob();
+                const objectUrl = URL.createObjectURL(imageBlob);
                 const link = document.createElement("a");
                 link.download = `probe-report-${uuid}.png`;
-                link.href = data.image_url;
+                link.href = objectUrl;
                 link.click();
+                URL.revokeObjectURL(objectUrl);
                 toast.success("图片已保存");
               } catch {
                 // Fallback: 前端截图

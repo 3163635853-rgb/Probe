@@ -26,13 +26,6 @@ import type {
 
 type Step = "industry" | "position" | "mode" | "difficulty" | "jd";
 const STEPS: Step[] = ["industry", "position", "mode", "difficulty", "jd"];
-const STEP_LABELS: Record<Step, string> = {
-  industry: "行业",
-  position: "岗位",
-  mode: "模式",
-  difficulty: "难度",
-  jd: "JD",
-};
 
 export default function SetupScreen() {
   const router = useRouter();

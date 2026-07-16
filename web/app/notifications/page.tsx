@@ -27,7 +27,7 @@ export default function NotificationsPage() {
 }
 
 function NotificationsContent() {
-  const { data, loading, refetch } = useFetch<PaginatedData<Notification>>("/notification/list?page=1&page_size=50");
+  const { data, loading } = useFetch<PaginatedData<Notification>>("/notification/list?page=1&page_size=50");
   const [optimistic, setOptimistic] = useState<Set<number>>(new Set());
 
   const toast = useToast();

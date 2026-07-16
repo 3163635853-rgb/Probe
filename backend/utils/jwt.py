@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
+import jwt
 from config import settings
 
 ALGORITHM = settings.JWT_ALGORITHM
@@ -19,7 +19,7 @@ def decode_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
 

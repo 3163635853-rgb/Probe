@@ -34,13 +34,12 @@ const INPUT_MAX_LENGTH = 5000;
 export default function InterviewScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const router = useRouter();
-  const routerRef = useRef(router);
-  routerRef.current = router;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [connState, setConnState] = useState<SSEConnectionState>("connecting");
+  const connStateRef = useRef<SSEConnectionState>("connecting");
   const [round, setRound] = useState(0);
   const roundRef = useRef(0);
   const [actionLoading, setActionLoading] = useState(false);
@@ -75,15 +74,17 @@ export default function InterviewScreen() {
           setThinking(true);
         },
         onReport() {
-          routerRef.current.replace(`/interview/${uuid}/report`);
+          router.replace(`/interview/${uuid}/report`);
         },
         onError(data) {
           setError(data.message || "面试出现错误");
         },
         onStateChange(s) {
+          connStateRef.current = s;
           setConnState(s);
         },
         onDone() {
+          connStateRef.current = "closed";
           setConnState("closed");
         },
       });
@@ -95,7 +96,7 @@ export default function InterviewScreen() {
 
     // iOS 后台杀连接：回到前台时主动重连
     const appStateListener = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "active" && connState !== "connected" && connState !== "closed") {
+      if (nextState === "active" && connStateRef.current !== "connected" && connStateRef.current !== "closed") {
         sseRef.current?.close();
         connectSSE();
       }
@@ -105,7 +106,7 @@ export default function InterviewScreen() {
       sse.close();
       appStateListener.remove();
     };
-  }, [uuid]);
+  }, [router, uuid]);
 
   // 消息更新时自动滚动到底部（通过 onContentSizeChange 替代 setTimeout）
   const scrollToBottom = useCallback(() => {

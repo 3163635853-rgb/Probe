@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchAPI } from "./api";
+import { fetchAPI, getErrorMessage } from "./api";
 
 interface AsyncState<T> {
   data: T | null;
@@ -36,9 +36,9 @@ export function useAsync<T>(
       if (mountedRef.current) {
         setState({ data, loading: false, error: null });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (mountedRef.current) {
-        setState((s) => ({ ...s, loading: false, error: e.message || "加载失败" }));
+        setState((s) => ({ ...s, loading: false, error: getErrorMessage(e, "加载失败") }));
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

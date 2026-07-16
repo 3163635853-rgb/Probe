@@ -37,3 +37,7 @@ redis_data/
 
 # Temp
 image/
+
+secrets/
+backend/data/share_images/
+backend/data/uploads/

@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { MotiView } from "moti";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Crown, Check } from "lucide-react-native";
@@ -16,6 +18,16 @@ interface Plan {
   description: string;
 }
 
+
+interface CouponOption {
+  id: number;
+  name: string;
+  coupon_type: string;
+  value: number;
+  status: string;
+  expire_at: string;
+}
+
 interface Subscription {
   plan: string;
   status: string;
@@ -28,21 +40,37 @@ interface Subscription {
 export default function MembershipScreen() {
   const router = useRouter();
   const { data: plans } = useFetch<Plan[]>("/payment/plans");
-  const { data: sub } = useFetch<Subscription | null>("/subscription/current");
+  const { data: sub, refetch: refetchSubscription } = useFetch<Subscription | null>("/subscription/current");
+  const { data: coupons, refetch: refetchCoupons } = useFetch<CouponOption[]>("/coupon/mine?status=unused");
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState("");
   const [couponMsg, setCouponMsg] = useState("");
+  const [purchaseError, setPurchaseError] = useState("");
+  const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
 
   async function handlePurchase(productType: string) {
+    if (purchasing) return;
     setPurchasing(productType);
+    setPurchaseError("");
     try {
-      await fetchAPI("/payment/create", {
+      const order = await fetchAPI<{ h5_url: string | null }>("/payment/create", {
         method: "POST",
-        body: JSON.stringify({ product_type: productType }),
+        body: JSON.stringify({
+          product_type: productType,
+          payment_method: "h5",
+          coupon_id: selectedCouponId || undefined,
+        }),
       });
-      // 支付创建成功后，实际需要调起微信支付
-      // 此处为占位 — 真实实现需要对接微信支付 SDK
-    } catch {} finally {
+      if (!order.h5_url) throw new Error("支付链接生成失败");
+      const redirectUrl = Linking.createURL("/membership");
+      const separator = order.h5_url.includes("?") ? "&" : "?";
+      await WebBrowser.openBrowserAsync(
+        `${order.h5_url}${separator}redirect_url=${encodeURIComponent(redirectUrl)}`
+      );
+      await refetchSubscription();
+    } catch (error: unknown) {
+      setPurchaseError(error instanceof Error ? error.message : "创建订单失败");
+    } finally {
       setPurchasing(null);
     }
   }
@@ -86,9 +114,36 @@ export default function MembershipScreen() {
           </MotiView>
         )}
 
+        {(coupons || []).some((coupon) => coupon.coupon_type === "discount") && (
+          <View className="px-6 mt-6">
+            <Text className="text-sm font-semibold text-foreground mb-3">选择优惠券</Text>
+            <View className="gap-2">
+              <TouchableOpacity
+                className={`rounded-xl border p-3 ${selectedCouponId === null ? "border-primary bg-primary/5" : "border-border bg-white"}`}
+                onPress={() => setSelectedCouponId(null)}
+              >
+                <Text className="text-sm text-foreground">不使用优惠券</Text>
+              </TouchableOpacity>
+              {(coupons || []).filter((coupon) => coupon.coupon_type === "discount").map((coupon) => (
+                <TouchableOpacity
+                  key={coupon.id}
+                  className={`rounded-xl border p-3 ${selectedCouponId === coupon.id ? "border-primary bg-primary/5" : "border-border bg-white"}`}
+                  onPress={() => setSelectedCouponId(coupon.id)}
+                >
+                  <Text className="text-sm font-medium text-foreground">{coupon.name}</Text>
+                  <Text className="text-xs text-muted-foreground mt-1">优惠 {coupon.value}%</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Plans */}
         <View className="px-6 mt-6 gap-3">
           <Text className="text-lg font-bold text-foreground mb-2">选择方案</Text>
+          {purchaseError ? (
+            <Text className="text-xs text-destructive">{purchaseError}</Text>
+          ) : null}
           {plans?.map((plan, index) => (
             <MotiView
               key={plan.product_type}
@@ -164,6 +219,7 @@ export default function MembershipScreen() {
                   });
                   setCouponMsg("兑换成功");
                   setCouponCode("");
+                  await refetchCoupons();
                 } catch (e: unknown) {
                   setCouponMsg(e instanceof Error ? e.message : "兑换失败");
                 }

@@ -7,17 +7,17 @@ interface AsyncState<T> {
   error: string | null;
 }
 
-export function useAsync<T>(
-  fetcher: (() => Promise<T>) | null,
-  deps: unknown[] = []
+export function useFetch<T>(
+  path: string | null,
+  _legacyDeps: unknown[] = []
 ): AsyncState<T> & { refetch: () => Promise<void> } {
   const [state, setState] = useState<AsyncState<T>>({
     data: null,
-    loading: !!fetcher,
+    loading: path !== null,
     error: null,
   });
   const mountedRef = useRef(true);
-  const requestId = useRef(0); // 防止旧请求覆盖新结果
+  const requestId = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -25,42 +25,29 @@ export function useAsync<T>(
   }, []);
 
   const load = useCallback(async () => {
-    if (!fetcher) {
-      setState((s) => (s.loading ? { ...s, loading: false } : s));
+    if (!path) {
+      setState((current) => current.loading ? { ...current, loading: false } : current);
       return;
     }
-    const thisRequest = ++requestId.current;
-    setState((s) => ({ ...s, loading: true, error: null }));
+
+    const currentRequest = ++requestId.current;
+    setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const data = await fetcher();
-      // 只有最新的请求才更新 state
-      if (mountedRef.current && thisRequest === requestId.current) {
+      const data = await fetchAPI<T>(path);
+      if (mountedRef.current && currentRequest === requestId.current) {
         setState({ data, loading: false, error: null });
       }
-    } catch (e: unknown) {
-      if (mountedRef.current && thisRequest === requestId.current) {
-        const msg = e instanceof Error ? e.message : "加载失败";
-        setState((s) => ({ ...s, loading: false, error: msg }));
+    } catch (error: unknown) {
+      if (mountedRef.current && currentRequest === requestId.current) {
+        const message = error instanceof Error ? error.message : "加载失败";
+        setState((current) => ({ ...current, loading: false, error: message }));
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [path]);
 
   useEffect(() => {
-    load();
+    void Promise.resolve().then(load);
   }, [load]);
 
   return { ...state, refetch: load };
-}
-
-/**
- * 快捷 GET 请求 hook
- * 注意: deps 中的每个元素必须是 primitive（string/number/boolean/null），
- * 不要传 object/array，否则会触发无限重请求。
- */
-export function useFetch<T>(path: string | null, deps: unknown[] = []) {
-  return useAsync<T>(
-    path ? () => fetchAPI<T>(path) : null,
-    [path, ...deps]
-  );
 }

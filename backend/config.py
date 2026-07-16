@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database
-    DATABASE_URL: str = "mysql+asyncmy://probe:probe@localhost:3306/probe"
+    DATABASE_URL: str = "mysql+aiomysql://probe:probe@localhost:3306/probe"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -22,9 +22,23 @@ class Settings(BaseSettings):
     DEEPSEEK_BASE_URL: str = "https://token-plan-cn.xiaomimimo.com/v1"
     DEEPSEEK_MODEL: str = "mimo-v2-pro"
 
-    # WeChat
+    # WeChat / WeChat Pay API v3
     WX_APP_ID: str = ""
     WX_APP_SECRET: str = ""
+    WECHAT_PAY_MCH_ID: str = ""
+    WECHAT_PAY_MCH_SERIAL_NO: str = ""
+    WECHAT_PAY_PRIVATE_KEY_PATH: str = ""
+    WECHAT_PAY_PUBLIC_KEY_ID: str = ""
+    WECHAT_PAY_PUBLIC_KEY_PATH: str = ""
+    WECHAT_PAY_API_V3_KEY: str = ""
+    WECHAT_PAY_NOTIFY_URL: str = ""
+
+    # Public URLs and generated assets
+    PUBLIC_API_URL: str = "http://localhost:8000"
+    PUBLIC_WEB_URL: str = "http://localhost:3000"
+    SHARE_STORAGE_DIR: str = "data/share_images"
+    SHARE_FONT_PATH: str = ""
+    UPLOAD_STORAGE_DIR: str = "data/uploads"
 
     # Quota
     FREE_MONTHLY_QUOTA: int = 3
@@ -41,5 +55,7 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # 生产环境安全检查
-if not settings.DEBUG and settings.JWT_SECRET == "change-me-in-production":
-    raise RuntimeError("JWT_SECRET must be set in production. Check your .env file.")
+if not settings.DEBUG and (
+    settings.JWT_SECRET == "change-me-in-production" or len(settings.JWT_SECRET.encode("utf-8")) < 32
+):
+    raise RuntimeError("JWT_SECRET must be at least 32 bytes in production.")

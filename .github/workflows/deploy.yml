@@ -15,18 +15,30 @@ jobs:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
+          script_stop: true
           script: |
+            set -e
             cd /opt/probe
-            git pull origin main
+            git pull --ff-only origin main
+            docker compose config --quiet
             docker compose build --no-cache backend web
-            docker compose up -d
-            # 等待 backend 健康后再跑迁移
-            echo "Waiting for backend health..."
+            docker compose up -d mysql redis
+            docker compose run --rm backend uv run alembic upgrade head
+            docker compose up -d backend web caddy
+
+            echo "Waiting for application health..."
+            healthy=false
             for i in $(seq 1 30); do
-              if docker compose exec -T backend curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              if docker compose exec -T backend curl -sf http://localhost:8000/health | grep -q '"status":"ok"'; then
+                healthy=true
                 break
               fi
               sleep 2
             done
-            docker compose exec -T backend alembic upgrade head
-            echo "Deployed at $(date)"
+            if [ "$healthy" != "true" ]; then
+              docker compose ps
+              docker compose logs --tail=100 backend web
+              exit 1
+            fi
+            docker compose ps
+            echo "Deployed successfully at $(date -Iseconds)"

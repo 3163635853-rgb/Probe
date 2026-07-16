@@ -4,32 +4,39 @@
   "main": "index.ts",
   "dependencies": {
     "burnt": "^0.13.0",
-    "expo": "~56.0.12",
+    "expo": "~56.0.16",
     "expo-application": "^56.0.3",
-    "expo-av": "^16.0.8",
+    "expo-asset": "~56.0.20",
+    "expo-audio": "~56.0.12",
     "expo-constants": "^56.0.18",
     "expo-haptics": "^56.0.3",
     "expo-linear-gradient": "^56.0.4",
-    "expo-linking": "^56.0.14",
-    "expo-notifications": "^56.0.18",
-    "expo-router": "^56.2.11",
+    "expo-linking": "~56.0.15",
+    "expo-notifications": "~56.0.21",
+    "expo-router": "~56.2.15",
     "expo-secure-store": "^56.0.4",
+    "expo-splash-screen": "~56.0.13",
     "expo-status-bar": "~56.0.4",
+    "expo-web-browser": "~56.0.5",
     "lucide-react-native": "^1.18.0",
     "moti": "^0.30.0",
     "nativewind": "^4.2.5",
     "react": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-gesture-handler": "^3.0.1",
-    "react-native-reanimated": "^4.4.1",
+    "react-native-gesture-handler": "~2.31.1",
+    "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "^4.25.2",
     "react-native-sse": "^1.2.1",
-    "react-native-svg": "^15.15.5",
+    "react-native-svg": "15.15.4",
+    "react-native-worklets": "0.8.3",
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~56.0.4",
+    "expo-doctor": "^1.20.1",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -39,7 +46,13 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint app/ lib/ components/ --ext .ts,.tsx",
-    "check": "npm run typecheck && npm run lint"
+    "check": "npm run typecheck && npm run lint && npm run doctor",
+    "doctor": "expo-doctor"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "xcode": {
+      "uuid": "11.1.1"
+    }
+  }
 }

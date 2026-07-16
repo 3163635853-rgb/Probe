@@ -1,5 +1,15 @@
 api.probe.app {
-	reverse_proxy backend:8000
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+	handle /health {
+		reverse_proxy backend:8000
+	}
+	# Backward compatibility: legacy App builds called /auth, /interview, etc.
+	handle {
+		rewrite * /api{uri}
+		reverse_proxy backend:8000
+	}
 }
 
 probe.app {

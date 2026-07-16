@@ -5,6 +5,8 @@ from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 from sqlalchemy import text
 
+import models  # noqa: F401 - register complete ORM metadata
+
 from config import settings
 from utils.logging import setup_logging
 from db.mysql import engine

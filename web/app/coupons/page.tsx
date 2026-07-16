@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Ticket } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useFetch } from "@/lib/hooks";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
 interface Coupon {
@@ -42,8 +42,8 @@ function CouponsContent() {
       toast.success("兑换成功");
       setRedeemCode("");
       refetch();
-    } catch (e: any) {
-      toast.error(e.message || "兑换失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "兑换失败"));
     }
   }
 

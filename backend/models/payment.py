@@ -21,6 +21,8 @@ class Payment(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(String(16), default="pending")
     refund_reason: Mapped[Optional[str]] = mapped_column(String(256))
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    fulfilled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
 
 class Subscription(Base, FullTimestampMixin):

@@ -39,8 +39,8 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 ## 项目规模
 
 ```
-代码量:    12,000+ 行 (Python + TypeScript)
-后端:      62 个源文件, 47 个 API 端点, 12 个路由模块
+代码量:    13,000+ 行 (Python + TypeScript)
+后端:      70+ 个源文件, 48 个 API 端点, 16 个路由模块
 Web 前端:  11 个页面, 10 个组件
 App:       17 个页面, 7 个组件
 数据库:    19 张 MySQL 表 + Redis 缓存 + FAISS 向量索引
@@ -48,6 +48,11 @@ App:       17 个页面, 7 个组件
 ```
 
 ## 系统架构
+
+![Probe AI 面试官全链路](doc/assets/probe-end-to-end-chain.png)
+
+> 详细链路、时序、支付/分享流程与发布验收见 [端到端功能链路](doc/implementation/END_TO_END_CHAIN.md)。
+
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -80,7 +85,7 @@ App:       17 个页面, 7 个组件
 Probe/
 ├── backend/              # Python FastAPI 后端
 │   ├── agent/            # 智能体核心 (planner/prober/evaluator/reporter)
-│   ├── api/              # 12 个路由模块, 47 个端点
+│   ├── api/              # 16 个路由模块, 48 个端点
 │   ├── models/           # SQLAlchemy ORM (19 表)
 │   ├── services/         # LLM / 语音 / 推送
 │   ├── knowledge/        # FAISS 向量检索 + embedding
@@ -142,12 +147,14 @@ npx expo start
 
 | 文档 | 内容 |
 |------|------|
-| [后端接口文档](backend/BACKEND.md) | 47 个端点完整规范 (请求/响应/错误码) |
+| [后端接口文档](backend/BACKEND.md) | 48 个端点完整规范 (请求/响应/错误码) |
 | [系统架构](doc/architecture/ARCHITECTURE.md) | Agent 状态机、技术决策、数据流 |
 | [数据库设计](doc/architecture/DATABASE.md) | 19 表 DDL + Redis Key + FAISS |
 | [App API](doc/architecture/API_APP.md) | App 独有接口 + 差异说明 |
 | [竞品分析](doc/business/COMPETITIVE.md) | 市场调研 + 定价策略 |
 | [App 开发计划](doc/implementation/PHASE2_APP.md) | Expo 3 周任务清单 |
+| [上线检查清单](doc/implementation/PRODUCTION_READINESS.md) | 支付商户材料、部署步骤与生产验证 |
+| [端到端功能链路](doc/implementation/END_TO_END_CHAIN.md) | 全功能链路、时序图、验收结果与发布配置 |
 
 ## 版本规划
 
@@ -165,8 +172,11 @@ npx expo start
 - SSE 断线自动重连 + iOS 后台恢复
 - 配额原子扣减 (Redis Lua 脚本)
 - DB 提交失败补偿回滚
-- CI: 全量 Python 语法检查 + Next.js 构建验证
-- CD: 健康检查等待 + 自动迁移
+- CI: 后端测试与迁移 + Web lint/build + Mobile typecheck/lint + Compose 校验
+- CD: 迁移优先、健康检查等待、失败日志与自动停止
+- 微信支付 API v3: JSAPI/H5 下单、RSA 验签、AES-GCM 回调解密、幂等履约
+- 分享图片: 服务端生成、持久化、渠道记录与点击统计
+- 自动化测试: 支付签名/解密、优惠券计算、分享图和应用注册检查
 
 ## 独立开发
 

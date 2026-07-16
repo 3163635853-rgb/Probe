@@ -21,62 +21,110 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost"
           --health-interval=5s
           --health-timeout=3s
-          --health-retries=5
-        ports:
-          - 3306:3306
+          --health-retries=10
+        ports: ["3306:3306"]
       redis:
         image: redis:7-alpine
         options: >-
           --health-cmd="redis-cli ping"
           --health-interval=5s
           --health-timeout=3s
-          --health-retries=3
-        ports:
-          - 6379:6379
+          --health-retries=5
+        ports: ["6379:6379"]
 
     steps:
       - uses: actions/checkout@v4
-
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install dependencies
         working-directory: backend
-        run: |
-          pip install uv
-          uv pip install --system -r pyproject.toml
+        run: uv sync --frozen --group dev
 
-      - name: Syntax check all Python files
+      - name: Compile Python sources
         working-directory: backend
-        run: find . -name "*.py" -not -path "./.venv/*" | xargs python -m py_compile
+        run: uv run python -m compileall -q -x "\\.venv" .
+
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          DEBUG: "true"
+          JWT_SECRET: test-secret-that-is-at-least-32-bytes
+        run: uv run pytest -q
+
+      - name: Audit backend dependencies
+        working-directory: backend
+        run: uv run pip-audit
 
       - name: Run migrations
         working-directory: backend
         env:
-          DATABASE_URL: mysql+asyncmy://probe:probe@localhost:3306/probe_test
+          DATABASE_URL: mysql+aiomysql://probe:probe@localhost:3306/probe_test
           REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET: test-secret
+          DEBUG: "true"
+          JWT_SECRET: test-secret-that-is-at-least-32-bytes
           DEEPSEEK_API_KEY: sk-test
-        run: alembic upgrade head
+        run: uv run alembic upgrade head
 
-  frontend-build:
+  web-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: npm
           cache-dependency-path: web/package-lock.json
-
       - name: Install dependencies
         working-directory: web
         run: npm ci
-
+      - name: Audit production dependencies
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Lint
+        working-directory: web
+        run: npm run lint
       - name: Build
         working-directory: web
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api
+          NEXT_PUBLIC_SITE_URL: https://probe.app
         run: npm run build
+
+  mobile-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Install dependencies
+        working-directory: mobile
+        run: npm ci --legacy-peer-deps
+      - name: Audit production dependencies
+        working-directory: mobile
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Typecheck, lint, and Expo Doctor
+        working-directory: mobile
+        run: npm run check
+
+  compose-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose files
+        env:
+          MYSQL_ROOT_PASSWORD: test-root
+          MYSQL_PASSWORD: test-probe
+          JWT_SECRET: test-secret-that-is-at-least-32-bytes
+          DEEPSEEK_API_KEY: sk-test
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.dev.yml config --quiet

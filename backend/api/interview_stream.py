@@ -40,7 +40,13 @@ async def _push_event(session_id: str, seq: int, event: str, data: dict) -> str:
 
 
 @router.get("/{uuid}/stream")
-async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Query(None), last_event_id: int = Header(0, alias="last-event-id")):
+async def interview_stream(
+    uuid: str,
+    token: str = Query(None),
+    ticket: str = Query(None),
+    authorization: str | None = Header(None),
+    last_event_id: int = Header(0, alias="last-event-id"),
+):
     """SSE 面试流（优先用 ticket 认证，fallback 到 token）"""
     user_id = None
 
@@ -50,9 +56,13 @@ async def interview_stream(uuid: str, token: str = Query(None), ticket: str = Qu
         if uid:
             user_id = int(uid)
 
-    # fallback: 长期 token（兼容旧前端）
-    if not user_id and token:
-        payload = decode_token(token)
+    # fallback: Authorization Bearer（App）或 query token（旧前端）
+    bearer_token = None
+    if authorization and authorization.startswith("Bearer "):
+        bearer_token = authorization[7:]
+    auth_token = bearer_token or token
+    if not user_id and auth_token:
+        payload = decode_token(auth_token)
         if payload and payload.get("sub"):
             user_id = int(payload["sub"])
 

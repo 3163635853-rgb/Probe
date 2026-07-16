@@ -52,44 +52,44 @@ export function createSSE(url: string, handlers: SSEHandlers) {
     setState("connected");
   };
 
-  function safeParse(data: string): any {
+  function safeParse(data: string): unknown {
     try { return JSON.parse(data); } catch { return null; }
   }
 
   // 服务端推送的 connected 事件（含 session_uuid 和 resumed_from）
   eventSource.addEventListener("connected", (e) => {
     setState("connected");
-    const d = safeParse(e.data); if (d) handlers.onConnected?.(d);
+    const d = safeParse(e.data); if (d) handlers.onConnected?.(d as SSEConnectedEvent);
   });
 
   eventSource.addEventListener("question", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onQuestion?.(d);
+    const d = safeParse(e.data); if (d) handlers.onQuestion?.(d as SSEQuestionEvent);
   });
 
   eventSource.addEventListener("status", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onStatus?.(d);
+    const d = safeParse(e.data); if (d) handlers.onStatus?.(d as SSEStatusEvent);
   });
 
   eventSource.addEventListener("evaluation", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onEvaluation?.(d);
+    const d = safeParse(e.data); if (d) handlers.onEvaluation?.(d as SSEEvaluationEvent);
   });
 
   eventSource.addEventListener("thinking", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onThinking?.(d);
+    const d = safeParse(e.data); if (d) handlers.onThinking?.(d as { content: string });
   });
 
   eventSource.addEventListener("report", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onReport?.(d);
+    const d = safeParse(e.data); if (d) handlers.onReport?.(d as SSEReportEvent);
   });
 
   eventSource.addEventListener("reminder", (e) => {
-    const d = safeParse(e.data); if (d) handlers.onReminder?.(d);
+    const d = safeParse(e.data); if (d) handlers.onReminder?.(d as { message: string });
   });
 
   eventSource.addEventListener("error", (e) => {
     const me = e as MessageEvent;
     if (!me.data) return;
-    const d = safeParse(me.data); if (d) handlers.onError?.(d);
+    const d = safeParse(me.data); if (d) handlers.onError?.(d as SSEErrorEvent);
   });
 
   eventSource.addEventListener("done", () => {

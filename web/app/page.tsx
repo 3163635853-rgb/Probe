@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { CountUp } from "@/components/CountUp";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -36,7 +37,7 @@ export default function HomePage() {
         <div className="absolute inset-0 -z-10 overflow-hidden">
           {/* AI 生成的背景图 */}
           <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-            <img src="/hero-bg.png" alt="" className="w-full h-full object-cover" />
+            <Image src="/hero-bg.png" alt="" fill priority sizes="100vw" className="object-cover" />
           </div>
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
           <div className="absolute top-[10%] left-[5%] w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl animate-float" />
@@ -163,7 +164,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="relative">
-                <img src="/report-mockup.png" alt="Probe 面试报告示例" className="w-full h-auto" />
+                <Image src="/report-mockup.png" alt="Probe 面试报告示例" width={1200} height={800} className="h-auto w-full" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center">
                   <Link href="/interview/setup" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
@@ -218,7 +219,7 @@ export default function HomePage() {
                 {/* 左侧：架构可视化图 */}
                 <div className="flex items-center justify-center">
                   <div className="relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden border border-border/50 bg-background/50">
-                    <img src="/architecture.png" alt="Probe Agent Architecture" className="w-full h-full object-contain p-4" />
+                    <Image src="/architecture.png" alt="Probe Agent Architecture" fill sizes="(min-width: 1024px) 384px, 100vw" className="object-contain p-4" />
                   </div>
                 </div>
 

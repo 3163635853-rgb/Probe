@@ -57,9 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 启动时检查
   useEffect(() => {
-    validateToken().finally(() => setLoading(false));
+    void Promise.resolve().then(validateToken).finally(() => setLoading(false));
     // 注册 401 回调：api 层 401 时清除用户状态触发 AuthGuard 跳转登录
     setOnUnauthorized(() => setUser(null));
+    return () => setOnUnauthorized(null);
   }, [validateToken]);
 
   // App 从后台回前台时重新验证 token

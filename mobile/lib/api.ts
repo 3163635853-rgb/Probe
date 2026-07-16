@@ -3,12 +3,12 @@ import type { ApiResponse } from "./types";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.probe.app";
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://api.probe.app/api";
 const APP_VERSION = Constants.expoConfig?.version || "1.0.0";
 
 // 401 回调：由 auth-context 注册，解耦 api 层和 router
 let onUnauthorized: (() => void) | null = null;
-export function setOnUnauthorized(cb: () => void) {
+export function setOnUnauthorized(cb: (() => void) | null) {
   onUnauthorized = cb;
 }
 

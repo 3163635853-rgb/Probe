@@ -25,6 +25,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://probe.app"),
   title: "Probe — AI 面试官",
   description: "AI 智能体驱动的面试训练平台，助你拿下心仪 Offer",
   openGraph: {

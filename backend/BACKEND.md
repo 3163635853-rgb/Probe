@@ -300,22 +300,33 @@ id:N+1 event:done       data:{}
 → {"code":0,"data":[{"product_type":"monthly","name":"月卡","price":29.00,"original_price":29.00,"description":"无限面试+完整报告"}]}
 ```
 
-### POST /payment/create — 创建订单
+### POST /payment/create — 创建真实微信支付订单
 
 需认证: 是
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | product_type | string | 是 | monthly/yearly/single |
-| coupon_id | int | 否 | 优惠券 ID |
+| coupon_id | int | 否 | 用户持有的优惠券 ID |
+| payment_method | string | 否 | jsapi（微信内）或 h5（手机浏览器/App），默认 jsapi |
+
+JSAPI 要求当前用户绑定与 `WX_APP_ID` 对应的 openid；H5 不要求 openid。
 
 ```json
-→ {"code":0,"data":{"order_uuid":"...","order_no":"PROBE...","pay_amount":29.0,"discount_amount":0,"wx_pay_params":null}}
+→ {"code":0,"data":{"order_uuid":"...","order_no":"PROBE...","pay_amount":29.0,"discount_amount":0,"expires_at":"...","payment_method":"jsapi","wx_pay_params":{"appId":"...","timeStamp":"...","nonceStr":"...","package":"prepay_id=...","signType":"RSA","paySign":"..."},"h5_url":null}}
 ```
 
-### POST /payment/webhook — 支付回调
+### POST /payment/webhook — 微信支付 API v3 回调
 
-微信服务器调用，非 DEBUG 模式需验签
+无需用户认证。服务端会执行：
+
+1. 校验 `Wechatpay-*` RSA-SHA256 签名和 5 分钟时间窗
+2. 使用 API v3 Key 对 `resource` 执行 AES-256-GCM 解密
+3. 校验 appid、mchid、订单号、金额与 `trade_state`
+4. 行锁保证回调幂等
+5. 入账订阅/单次配额、核销优惠券并记录履约时间
+
+成功响应：`{"code":"SUCCESS","message":"成功"}`。
 
 ### GET /payment/orders — 支付记录 (分页)
 
@@ -329,7 +340,7 @@ id:N+1 event:done       data:{}
 → {"code":0,"data":{"plan":"monthly","status":"active","started_at":"...","expire_at":"...","auto_renew":false,"days_remaining":19}}
 ```
 
-### PUT /subscription/auto-renew — 切换自动续费
+### PUT /subscription/auto-renew — 切换续费提醒偏好
 
 | 参数 | 类型 | 必填 |
 |------|------|------|
@@ -419,18 +430,31 @@ voice: "female"(默认)/"male"/具体 Azure voice ID
 类型限制: avatar(jpg/png/webp, 5MB) / audio_input(wav/mp3/webm/m4a, 25MB)
 
 ```json
-→ {"code":0,"data":{"file_uuid":"...","url":"/api/file/..."}}
+→ {"code":0,"data":{"file_uuid":"...","url":"https://api.probe.app/api/file/..."}}
 ```
 
-### GET /file/{uuid} — 获取文件 (需认证, UUID 格式校验)
+### GET /file/{uuid} — 获取文件（头像公开缓存；音频需认证；UUID 格式校验）
 
 ---
 
 ## 13. 分享 `/api/share`
 
-### POST /share/generate-image — 生成分享图
+### POST /share/generate-image — 生成服务端分享图
+
+请求：`{"session_uuid":"...","template":"radar"}`，template 支持 radar/score_card/achievement。
+返回持久化 PNG URL 和 share_id。
+
+### GET /share/image/{uuid}.png — 获取分享图片
+
+无需认证，返回 `image/png`。路径经过 UUID 和存储根目录双重校验。
+
 ### POST /share/record — 记录分享行为
-### GET /share/callback/{id} — 分享点击回调 (无需认证, 302 重定向)
+
+请求：`{"share_id":1,"channel":"link"}`。渠道支持 wechat_moments/wechat_friend/xiaohongshu/douyin/link。
+
+### GET /share/callback/{id} — 分享点击回调
+
+无需认证；原子增加 click_count 后 302 重定向到 `PUBLIC_WEB_URL`。
 
 ---
 

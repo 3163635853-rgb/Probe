@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Monitor, Landmark, Stethoscope, GraduationCap, ShoppingBag, Factory, Briefcase } from "lucide-react";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import { AuthGuard } from "@/components/AuthGuard";
 import type {
@@ -76,8 +76,8 @@ function SetupFlow() {
       const data = await fetchAPI<Position[]>(`/config/positions?industry_id=${ind.id}`);
       setPositions(data);
       setStep("position");
-    } catch (e: any) {
-      toast.error(e.message || "加载岗位失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "加载岗位失败"));
     }
   }
 
@@ -88,8 +88,8 @@ function SetupFlow() {
       const data = await fetchAPI<InterviewMode[]>(`/config/modes?category=${pos.category}`);
       setModes(data);
       setStep("mode");
-    } catch (e: any) {
-      toast.error(e.message || "加载模式失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "加载模式失败"));
     }
   }
 
@@ -100,8 +100,8 @@ function SetupFlow() {
       const data = await fetchAPI<Difficulty[]>("/config/difficulties");
       setDifficulties(data);
       setStep("difficulty");
-    } catch (e: any) {
-      toast.error(e.message || "加载难度失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "加载难度失败"));
     }
   }
 
@@ -130,8 +130,8 @@ function SetupFlow() {
         }),
       });
       router.push(`/interview/${data.session_uuid}`);
-    } catch (e: any) {
-      toast.error(e.message || "创建面试失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "创建面试失败"));
     } finally {
       setLoading(false);
     }
@@ -169,8 +169,8 @@ function SetupFlow() {
                 onClick={async () => {
                   try {
                     await fetchAPI(`/interview/${activeSession.session_uuid}/end`, { method: "POST" });
-                  } catch (e: any) {
-                    toast.error(e.message || "结束面试失败");
+                  } catch (e: unknown) {
+                    toast.error(getErrorMessage(e, "结束面试失败"));
                   }
                   setActiveSession(null);
                 }}

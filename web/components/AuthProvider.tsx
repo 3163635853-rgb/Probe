@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { getToken, setToken, clearToken, isLoggedIn } from "@/lib/auth";
+import { setToken, clearToken, isLoggedIn } from "@/lib/auth";
 import { fetchAPI } from "@/lib/api";
 import type { User, LoginResponse } from "@/lib/types";
 
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshUser();
+    void Promise.resolve().then(refreshUser);
   }, [refreshUser]);
 
   const login = useCallback((token: string, user: LoginResponse["user"]) => {

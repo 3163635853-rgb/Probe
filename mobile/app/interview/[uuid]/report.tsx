@@ -5,6 +5,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
 import { ArrowLeft, Share2, ThumbsUp, AlertTriangle } from "lucide-react-native";
 import { useFetch } from "@/lib/hooks";
+import { fetchAPI } from "@/lib/api";
+import { useState } from "react";
 import { getScoreColorClass } from "@/lib/utils";
 import { RadarChart } from "@/components/RadarChart";
 import type { InterviewReport } from "@/lib/types";
@@ -12,6 +14,7 @@ import type { InterviewReport } from "@/lib/types";
 export default function ReportScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
   const router = useRouter();
+  const [sharing, setSharing] = useState(false);
   const { data: report, loading } = useFetch<InterviewReport>(
     `/interview/${uuid}/report`
   );
@@ -49,11 +52,31 @@ export default function ReportScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               className="h-8 w-8 items-center justify-center rounded-full bg-white border border-border"
-              onPress={() => {
-                if (!report) return;
-                Share.share({
-                  message: `我在 Probe 完成了一次${report.position}模拟面试，得分 ${report.overall_score} 分！来试试吧 👉 https://probe.app`,
-                });
+              disabled={sharing}
+              onPress={async () => {
+                if (!report || sharing) return;
+                setSharing(true);
+                try {
+                  const generated = await fetchAPI<{ image_url: string; share_id: number }>(
+                    "/share/generate-image",
+                    {
+                      method: "POST",
+                      body: JSON.stringify({ session_uuid: uuid, template: "radar" }),
+                    }
+                  );
+                  const result = await Share.share({
+                    message: `我在 Probe 完成了一次${report.position}模拟面试，得分 ${report.overall_score} 分！${generated.image_url}`,
+                    url: generated.image_url,
+                  });
+                  if (result.action === Share.sharedAction) {
+                    await fetchAPI("/share/record", {
+                      method: "POST",
+                      body: JSON.stringify({ share_id: generated.share_id, channel: "link" }),
+                    });
+                  }
+                } finally {
+                  setSharing(false);
+                }
               }}
             >
               <Share2 size={14} color="#78716c" />

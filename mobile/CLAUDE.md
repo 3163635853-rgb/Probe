@@ -11,7 +11,7 @@
 
 ## API 路径
 所有 API 路径以 `/` 开头（不含 `/api` 前缀），`fetchAPI` 会拼接 BASE_URL。
-后端实际路径是 `https://api.probe.app/auth/login` 等。
+`EXPO_PUBLIC_API_URL` 包含 `/api` 前缀，后端实际路径是 `https://api.probe.app/api/auth/login` 等。
 
 ## 安全
 - Token 存 expo-secure-store，不存 AsyncStorage

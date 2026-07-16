@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Volume2, Pause, Loader2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import { getToken } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/api";
 
 interface AudioPlayerProps {
   text: string;
@@ -48,8 +49,8 @@ export function AudioPlayer({ text, voice = "female" }: AudioPlayerProps) {
       };
       await audio.play();
       setPlaying(true);
-    } catch (e: any) {
-      toast.error(e.message || "语音合成失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "语音合成失败"));
     } finally {
       setLoading(false);
     }

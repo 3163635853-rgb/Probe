@@ -4,8 +4,7 @@ import { useEffect, useReducer, useRef, useCallback, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthGuard } from "@/components/AuthGuard";
-import { getToken } from "@/lib/auth";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 import { createSSE, type SSEConnectionState } from "@/lib/sse";
 import type { SSEQuestionEvent, SSEStatusEvent } from "@/lib/types";
 import { Brain, Send, SkipForward, X, Wifi, WifiOff } from "lucide-react";
@@ -158,8 +157,8 @@ function InterviewSession() {
             dispatch({ type: "SET_CONNECTION", state: s });
           },
         });
-      } catch (e: any) {
-        toast.error(e.message || "连接面试服务失败");
+      } catch (e: unknown) {
+        toast.error(getErrorMessage(e, "连接面试服务失败"));
       }
     }
 
@@ -194,8 +193,8 @@ function InterviewSession() {
         method: "POST",
         body: JSON.stringify({ content, type: "text" }),
       });
-    } catch (e: any) {
-      toast.error(e.message || "发送失败，请重试");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "发送失败，请重试"));
       dispatch({ type: "SET_INPUT_DISABLED", value: false });
     }
   }, [uuid, toast, state.inputDisabled]);
@@ -204,9 +203,9 @@ function InterviewSession() {
     dispatch({ type: "SET_INPUT_DISABLED", value: true });
     try {
       await fetchAPI(`/interview/${uuid}/skip`, { method: "POST" });
-    } catch (e: any) {
+    } catch (e: unknown) {
       dispatch({ type: "SET_INPUT_DISABLED", value: false });
-      toast.error(e.message || "跳过失败");
+      toast.error(getErrorMessage(e, "跳过失败"));
     }
   }, [uuid, toast]);
 
@@ -231,8 +230,8 @@ function InterviewSession() {
           setShowFeedback(true);
         }
       }, 5000);
-    } catch (e: any) {
-      toast.error(e.message || "结束面试失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "结束面试失败"));
     }
   }, [uuid, toast]);
 
@@ -290,7 +289,7 @@ function InterviewSession() {
       </header>
 
       {/* 评分浮层 */}
-      {state.lastScore && <ScoreToast score={state.lastScore} />}
+      {state.lastScore && <ScoreToast key={state.lastScore.round} score={state.lastScore} />}
 
       {/* 对话区 */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-5">
@@ -402,10 +401,9 @@ function ScoreToast({ score }: { score: { round: number; score: number; brief: s
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    setVisible(true);
     const t = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(t);
-  }, [score]);
+  }, []);
 
   if (!visible) return null;
 

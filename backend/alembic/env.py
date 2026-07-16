@@ -20,6 +20,7 @@ from models.invite import InviteCode, InviteRecord  # noqa: F401
 from models.notification import Notification  # noqa: F401
 from models.coupon import Coupon, UserCoupon  # noqa: F401
 from models.achievement import Achievement, UserAchievement  # noqa: F401
+from models.share import ShareRecord  # noqa: F401
 from config import settings
 
 config = context.config

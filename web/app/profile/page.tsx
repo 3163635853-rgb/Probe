@@ -5,7 +5,7 @@ import { User, Camera } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/Toast";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 
 export default function ProfilePage() {
   return (
@@ -33,8 +33,8 @@ function ProfileContent() {
       });
       await refreshUser();
       toast.success("资料已更新");
-    } catch (e: any) {
-      toast.error(e.message || "保存失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "保存失败"));
     } finally {
       setSaving(false);
     }
@@ -67,8 +67,8 @@ function ProfileContent() {
       });
       await refreshUser();
       toast.success("头像已更新");
-    } catch (e: any) {
-      toast.error(e.message || "上传失败");
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, "上传失败"));
     } finally {
       setUploading(false);
     }
@@ -86,6 +86,8 @@ function ProfileContent() {
             onClick={() => fileInputRef.current?.click()}
           >
             {user?.avatar ? (
+              // User-provided remote URLs are intentionally rendered without Next image optimization.
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar} alt="" className="w-full h-full object-cover" />
             ) : (
               <User className="w-8 h-8 text-muted-foreground" />

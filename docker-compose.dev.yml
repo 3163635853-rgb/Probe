@@ -1,21 +1,25 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=mysql+asyncmy://probe:probe@mysql:3306/probe
-      - REDIS_URL=redis://redis:6379/0
-      - JWT_SECRET=dev-secret
-      - DEBUG=true
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-placeholder}
-      - WX_APP_ID=${WX_APP_ID:-wx-dev}
-      - WX_APP_SECRET=${WX_APP_SECRET:-secret-dev}
+      DATABASE_URL: mysql+aiomysql://probe:probe@mysql:3306/probe
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-secret
+      DEBUG: "true"
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-sk-placeholder}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://token-plan-cn.xiaomimimo.com/v1}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-mimo-v2-pro}
+      WX_APP_ID: ${WX_APP_ID:-}
+      WX_APP_SECRET: ${WX_APP_SECRET:-}
+      PUBLIC_API_URL: http://localhost:8000
+      PUBLIC_WEB_URL: http://localhost:3000
+      SHARE_STORAGE_DIR: /app/data/share_images
+      UPLOAD_STORAGE_DIR: /app/data/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -33,7 +37,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
   mysql:
     image: mysql:8.0
@@ -42,16 +47,16 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=probe
-      - MYSQL_USER=probe
-      - MYSQL_PASSWORD=probe
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: probe
+      MYSQL_USER: probe
+      MYSQL_PASSWORD: probe
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -62,7 +67,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
-      retries: 3
+      retries: 5
 
 volumes:
   mysql_data:

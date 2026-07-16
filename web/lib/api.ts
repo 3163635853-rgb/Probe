@@ -20,6 +20,10 @@ interface ErrorBody {
   detail?: string;
 }
 
+export function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export async function fetchAPI<T>(
   path: string,
   options: RequestInit = {}

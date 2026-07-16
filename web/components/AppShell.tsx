@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, History, Crown, Bell, Gift, Ticket, Trophy, User, LogOut,
+  Home, History, Crown, Bell, Gift, User, LogOut,
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
@@ -18,10 +18,6 @@ const NAV_ITEMS = [
   { href: "/notifications", label: "通知", icon: Bell },
 ];
 
-const MORE_ITEMS = [
-  { href: "/coupons", label: "优惠券", icon: Ticket },
-  { href: "/achievements", label: "成就", icon: Trophy },
-];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput, Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MotiView } from "moti";
-import { ArrowLeft, Gift, Copy, Users } from "lucide-react-native";
+import { ArrowLeft, Gift } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";

@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, Crown } from "lucide-react";
+import { useState } from "react";
+import { Check, Crown, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useFetch } from "@/lib/hooks";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
 interface Plan {
@@ -22,6 +23,16 @@ export default function PricingPage() {
   );
 }
 
+
+interface CouponOption {
+  id: number;
+  name: string;
+  coupon_type: string;
+  value: number;
+  status: string;
+  expire_at: string;
+}
+
 interface Subscription {
   plan: string;
   status: string;
@@ -33,26 +44,53 @@ interface Subscription {
 function PricingContent() {
   const { data: plans, loading } = useFetch<Plan[]>("/payment/plans");
   const { data: sub } = useFetch<Subscription | null>("/subscription/current");
+  const { data: coupons } = useFetch<CouponOption[]>("/coupon/mine?status=unused");
   const toast = useToast();
+  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [selectedCouponId, setSelectedCouponId] = useState<number | null>(null);
 
   async function handlePurchase(productType: string) {
+    if (purchasing) return;
+    setPurchasing(productType);
     try {
-      const data = await fetchAPI<{ order_uuid: string; wx_pay_params: WxPayParams | null }>("/payment/create", {
+      const inWechat = /MicroMessenger/i.test(navigator.userAgent);
+      const onMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (!inWechat && !onMobile) {
+        toast.info("请使用手机浏览器或微信打开本页完成支付");
+        return;
+      }
+      const paymentMethod = inWechat ? "jsapi" : "h5";
+      const data = await fetchAPI<{
+        order_uuid: string;
+        wx_pay_params: WxPayParams | null;
+        h5_url: string | null;
+      }>("/payment/create", {
         method: "POST",
-        body: JSON.stringify({ product_type: productType }),
+        body: JSON.stringify({
+          product_type: productType,
+          payment_method: paymentMethod,
+          coupon_id: selectedCouponId || undefined,
+        }),
       });
-      if (data.wx_pay_params && typeof WeixinJSBridge !== "undefined" && WeixinJSBridge) {
-        WeixinJSBridge.invoke("getBrandWCPayRequest", data.wx_pay_params, (res: WxPayResult) => {
+      if (data.wx_pay_params && window.WeixinJSBridge) {
+        window.WeixinJSBridge.invoke("getBrandWCPayRequest", data.wx_pay_params, (res: WxPayResult) => {
           if (res.err_msg === "get_brand_wcpay_request:ok") {
             toast.success("支付成功");
             window.location.reload();
+          } else if (res.err_msg !== "get_brand_wcpay_request:cancel") {
+            toast.error("支付未完成，请重试");
           }
         });
+      } else if (data.h5_url) {
+        const separator = data.h5_url.includes("?") ? "&" : "?";
+        window.location.assign(`${data.h5_url}${separator}redirect_url=${encodeURIComponent(window.location.href)}`);
       } else {
-        toast.info("请在微信中完成支付");
+        toast.error("无法调起微信支付");
       }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "创建订单失败");
+    } finally {
+      setPurchasing(null);
     }
   }
 
@@ -81,7 +119,7 @@ function PricingContent() {
             <div>
               <p className="font-medium">当前套餐：{sub.plan === "monthly" ? "月卡" : sub.plan === "yearly" ? "年卡" : sub.plan}</p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {sub.days_remaining > 0 ? `${sub.days_remaining} 天后到期` : "已过期"} · {sub.auto_renew ? "自动续费已开" : "不自动续费"}
+                {sub.days_remaining > 0 ? `${sub.days_remaining} 天后到期` : "已过期"} · {sub.auto_renew ? "续费提醒已开" : "未开启提醒提醒"}
               </p>
             </div>
             <button
@@ -91,16 +129,37 @@ function PricingContent() {
                     method: "PUT",
                     body: JSON.stringify({ auto_renew: !sub.auto_renew }),
                   });
-                  toast.success(sub.auto_renew ? "已关闭自动续费" : "已开启自动续费");
+                  toast.success(sub.auto_renew ? "已关闭提醒提醒" : "已开启提醒提醒");
                   window.location.reload();
-                } catch (e: any) {
-                  toast.error(e.message || "操作失败");
+                } catch (e: unknown) {
+                  toast.error(getErrorMessage(e, "操作失败"));
                 }
               }}
               className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
             >
-              {sub.auto_renew ? "关闭续费" : "开启续费"}
+              {sub.auto_renew ? "关闭提醒" : "开启提醒"}
             </button>
+          </div>
+        )}
+
+        {(coupons || []).some((coupon) => coupon.coupon_type === "discount") && (
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+            <div>
+              <p className="font-medium">使用优惠券</p>
+              <p className="text-sm text-muted-foreground">优惠金额会在创建微信支付订单时自动核算</p>
+            </div>
+            <select
+              value={selectedCouponId ?? ""}
+              onChange={(event) => setSelectedCouponId(event.target.value ? Number(event.target.value) : null)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm"
+            >
+              <option value="">不使用优惠券</option>
+              {(coupons || []).filter((coupon) => coupon.coupon_type === "discount").map((coupon) => (
+                <option key={coupon.id} value={coupon.id}>
+                  {coupon.name} · 优惠 {coupon.value}%
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -132,9 +191,12 @@ function PricingContent() {
                 </ul>
                 <button
                   onClick={() => handlePurchase(plan.product_type)}
+                  disabled={purchasing !== null}
                   className={`w-full rounded-full py-3 font-medium transition-colors ${isPopular ? "bg-primary text-primary-foreground hover:bg-primary-hover" : "border border-border hover:bg-secondary"}`}
                 >
-                  选择{plan.name}
+                  {purchasing === plan.product_type ? (
+                    <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />处理中</span>
+                  ) : `选择${plan.name}`}
                 </button>
               </div>
             );
@@ -164,5 +226,4 @@ interface WeixinJSBridgeInterface {
 
 declare global {
   interface Window { WeixinJSBridge?: WeixinJSBridgeInterface; }
-  const WeixinJSBridge: WeixinJSBridgeInterface | undefined;
 }

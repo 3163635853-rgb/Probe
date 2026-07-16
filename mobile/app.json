@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "probe",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#fafaf9"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.probe.mobile"
@@ -29,12 +24,22 @@
       "expo-router",
       "expo-secure-store",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Probe需要麦克风权限来录制语音回答"
         }
       ],
-      "expo-notifications"
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#fafaf9",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-notifications",
+      "expo-asset"
     ],
     "extra": {
       "eas": {

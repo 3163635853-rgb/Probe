@@ -47,4 +47,4 @@ npx eas build --profile production # 正式包
 - lucide-react-native — 图标
 - react-native-sse — SSE polyfill（RN 无原生 EventSource）
 - expo-secure-store — token 安全存储
-- expo-av — 语音录制/播放
+- expo-audio — 语音录制/播放

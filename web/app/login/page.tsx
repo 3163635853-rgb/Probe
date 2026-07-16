@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, QrCode } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
-import { fetchAPI } from "@/lib/api";
+import { fetchAPI, getErrorMessage } from "@/lib/api";
 import type { LoginResponse } from "@/lib/types";
 
 type AuthTab = "email" | "wechat";
@@ -30,11 +30,11 @@ export default function LoginPage() {
     // 验证 OAuth state 防止 CSRF
     const savedState = sessionStorage.getItem("oauth_state");
     if (state && savedState && state !== savedState) {
-      setError("登录状态异常，请重试");
+      void Promise.resolve().then(() => setError("登录状态异常，请重试"));
       return;
     }
     sessionStorage.removeItem("oauth_state");
-    setLoading(true);
+    void Promise.resolve().then(() => setLoading(true));
     fetchAPI<LoginResponse>("/auth/wechat", {
       method: "POST",
       body: JSON.stringify({ code }),
@@ -43,7 +43,7 @@ export default function LoginPage() {
         login(data.token, data.user);
         router.replace("/interview/setup");
       })
-      .catch((e: any) => setError(e.message || "微信登录失败"))
+      .catch((e: unknown) => setError(getErrorMessage(e, "微信登录失败")))
       .finally(() => setLoading(false));
   }, [searchParams, login, router]);
 
@@ -62,8 +62,8 @@ export default function LoginPage() {
       });
       login(data.token, data.user);
       router.replace("/interview/setup");
-    } catch (e: any) {
-      setError(e.message || "操作失败");
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, "操作失败"));
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,10 @@ export default function LoginPage() {
     const redirectUri = encodeURIComponent(window.location.origin + "/login");
     const state = Math.random().toString(36).slice(2, 18);
     sessionStorage.setItem("oauth_state", state);
-    setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`);
+    const timer = window.setTimeout(() => {
+      setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (

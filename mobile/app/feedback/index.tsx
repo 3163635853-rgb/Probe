@@ -18,7 +18,7 @@ import { fetchAPI } from "@/lib/api";
 export default function FeedbackScreen() {
   const router = useRouter();
   const [content, setContent] = useState("");
-  const [rating, setRating] = useState(5);
+  const rating = 5;
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");

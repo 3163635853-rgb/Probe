@@ -1,9 +1,9 @@
 # 数据库设计
 
 > 最后更新: 2026-06-12
-> 状态: 19 张表全部建成（含 alembic_version），Alembic 管理迁移
+> 状态: 19 张业务表全部建成（另含 alembic_version），Alembic 管理迁移
 
-**已建成的表：** users, industries, positions, interview_modes, difficulty_configs, interview_sessions, interview_rounds, knowledge_questions, feedbacks, payments, subscriptions, invite_codes, invite_records, notifications, coupons, user_coupons, achievements, user_achievements
+**已建成的表：** users, industries, positions, interview_modes, difficulty_configs, interview_sessions, interview_rounds, knowledge_questions, feedbacks, payments, subscriptions, invite_codes, invite_records, notifications, coupons, user_coupons, achievements, user_achievements, share_records
 
 ---
 
@@ -418,26 +418,31 @@ CREATE TABLE user_achievements (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-### share_records — 分享记录
+### share_records — 分享图片与传播统计
 
 ```sql
 CREATE TABLE share_records (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  uuid VARCHAR(36) UNIQUE NOT NULL,
   user_id BIGINT NOT NULL,
-  session_id BIGINT,
-  channel VARCHAR(16) NOT NULL,                -- wechat_moments/wechat_friend/xiaohongshu/douyin/link
-  share_type VARCHAR(16) NOT NULL,             -- report/invite/achievement
-  share_image_url VARCHAR(512),
-  click_count INT DEFAULT 0,
-  convert_count INT DEFAULT 0,
+  session_id BIGINT NOT NULL,
+  template VARCHAR(24) NOT NULL,
+  image_path VARCHAR(512) NOT NULL,
+  image_url VARCHAR(512) NOT NULL,
+  channel VARCHAR(32),
+  share_count INT NOT NULL DEFAULT 0,
+  click_count INT NOT NULL DEFAULT 0,
+  last_shared_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (session_id) REFERENCES interview_sessions(id),
-  INDEX idx_user (user_id, created_at DESC),
-  INDEX idx_channel (channel, created_at DESC)
+  INDEX idx_share_user (user_id),
+  INDEX idx_share_session (session_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
+图片文件存储于 `SHARE_STORAGE_DIR`，生产 Compose 使用 `share_data` 持久卷。
 
 ### notifications — 站内通知
 
