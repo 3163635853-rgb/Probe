@@ -362,6 +362,8 @@ flowchart LR
     HEALTH -->|pass| DONE[部署完成]
 ```
 
+Deploy 工作流会先检查 `SERVER_IP`、`SERVER_USER` 和 `SSH_KEY`。未配置时明确记录 notice 并安全跳过，避免把代码发布错误与仓库基础设施未配置混为一谈。
+
 ## 17. 发布所需秘密配置
 
 生产 `.env` 必须配置：
