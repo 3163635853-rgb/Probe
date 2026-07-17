@@ -19,6 +19,9 @@ import type {
 
 type Step = "industry" | "position" | "mode" | "difficulty" | "jd" | "confirm";
 const STEPS: Step[] = ["industry", "position", "mode", "difficulty", "jd", "confirm"];
+interface ResumeOption { uuid: string; name: string; is_active: boolean; }
+interface CareerPresets { stages: { code: string; name: string; focus: string }[]; interviewer_roles: string[]; }
+interface RubricOption { uuid: string; name: string; }
 
 export default function SetupPage() {
   return (
@@ -48,19 +51,35 @@ function SetupFlow() {
   const [selectedMode, setSelectedMode] = useState<InterviewMode | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(null);
   const [jdText, setJdText] = useState("");
+  const [resumes, setResumes] = useState<ResumeOption[]>([]);
+  const [careerPresets, setCareerPresets] = useState<CareerPresets>({ stages: [], interviewer_roles: [] });
+  const [rubrics, setRubrics] = useState<RubricOption[]>([]);
+  const [resumeUuid, setResumeUuid] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [interviewStage, setInterviewStage] = useState("");
+  const [interviewerRole, setInterviewerRole] = useState("");
+  const [trainingFocus, setTrainingFocus] = useState("");
+  const [rubricUuid, setRubricUuid] = useState("");
 
   // 初始化：加载行业 + 配额 + 检查活跃面试
   useEffect(() => {
     async function init() {
       try {
-        const [industriesData, quotaData, active] = await Promise.all([
+        const [industriesData, quotaData, active, resumeData, presetData, rubricData] = await Promise.all([
           fetchAPI<Industry[]>("/config/industries"),
           fetchAPI<QuotaStatus>("/quota/status"),
           fetchAPI<ActiveInterview | null>("/interview/active"),
+          fetchAPI<ResumeOption[]>("/career/resumes"),
+          fetchAPI<CareerPresets>("/career/presets"),
+          fetchAPI<RubricOption[]>("/enterprise/rubrics"),
         ]);
         setIndustries(industriesData);
         setQuota(quotaData);
         setActiveSession(active);
+        setResumes(resumeData);
+        setCareerPresets(presetData);
+        setRubrics(rubricData);
+        setResumeUuid(resumeData.find((item) => item.is_active)?.uuid || "");
       } catch {
         toast.error("加载配置失败，请刷新重试");
       }
@@ -127,6 +146,12 @@ function SetupFlow() {
           mode: selectedMode.code,
           difficulty: selectedDifficulty.level,
           jd_text: jdText || undefined,
+          resume_uuid: resumeUuid || undefined,
+          company_name: companyName || undefined,
+          interview_stage: interviewStage || undefined,
+          interviewer_role: interviewerRole || undefined,
+          training_focus: trainingFocus || undefined,
+          rubric_uuid: rubricUuid || undefined,
         }),
       });
       router.push(`/interview/${data.session_uuid}`);
@@ -275,6 +300,22 @@ function SetupFlow() {
               placeholder="粘贴职位描述，AI 会针对 JD 定制面试题..."
               className="w-full rounded-lg border border-border p-4 h-40 resize-none focus:outline-none focus:border-primary"
             />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select value={resumeUuid} onChange={(e) => setResumeUuid(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
+                <option value="">不使用简历</option>{resumes.map((item) => <option key={item.uuid} value={item.uuid}>{item.name}</option>)}
+              </select>
+              <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="目标公司（可选）" className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm" />
+              <select value={interviewStage} onChange={(e) => setInterviewStage(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
+                <option value="">选择面试轮次</option>{careerPresets.stages.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+              </select>
+              <select value={interviewerRole} onChange={(e) => setInterviewerRole(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
+                <option value="">选择面试官角色</option>{careerPresets.interviewer_roles.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+              <input value={trainingFocus} onChange={(e) => setTrainingFocus(e.target.value)} placeholder="专项重点，例如：量化成果" className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm" />
+              <select value={rubricUuid} onChange={(e) => setRubricUuid(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
+                <option value="">默认评分标准</option>{rubrics.map((item) => <option key={item.uuid} value={item.uuid}>{item.name}</option>)}
+              </select>
+            </div>
             <div className="flex gap-3 mt-4">
               <button
                 onClick={skipJd}
@@ -300,6 +341,10 @@ function SetupFlow() {
               <p><span className="text-muted-foreground">模式：</span>{selectedMode?.name}</p>
               <p><span className="text-muted-foreground">难度：</span>{selectedDifficulty?.name}</p>
               {jdText && <p><span className="text-muted-foreground">JD：</span>已填写</p>}
+              {resumeUuid && <p><span className="text-muted-foreground">简历：</span>已启用</p>}
+              {companyName && <p><span className="text-muted-foreground">公司：</span>{companyName}</p>}
+              {interviewStage && <p><span className="text-muted-foreground">轮次：</span>{careerPresets.stages.find((item) => item.code === interviewStage)?.name || interviewStage}</p>}
+              {trainingFocus && <p><span className="text-muted-foreground">专项重点：</span>{trainingFocus}</p>}
             </div>
             <button
               onClick={startInterview}

@@ -40,4 +40,25 @@ async def evaluate(
     else:
         result["score"] = int(score)
 
+    evidence = result.get("evidence") if isinstance(result.get("evidence"), list) else []
+    result["evidence"] = [
+        {
+            "type": "strength" if item.get("type") == "strength" else "weakness",
+            "quote": str(item.get("quote") or "")[:160],
+            "reason": str(item.get("reason") or "")[:240],
+        }
+        for item in evidence
+        if isinstance(item, dict) and (item.get("quote") or item.get("reason"))
+    ][:8]
+    structure = result.get("structure") if isinstance(result.get("structure"), dict) else {}
+    result["structure"] = {
+        "framework": str(structure.get("framework") or "未识别")[:80],
+        "complete": bool(structure.get("complete", False)),
+        "missing": [str(item)[:120] for item in (structure.get("missing") or []) if str(item).strip()][:6]
+        if isinstance(structure.get("missing"), list) else [],
+    }
+    result["strengths"] = [str(item)[:200] for item in result.get("strengths", []) if str(item).strip()][:6]
+    result["weaknesses"] = [str(item)[:200] for item in result.get("weaknesses", []) if str(item).strip()][:6]
+    result["suggestion"] = str(result.get("suggestion") or "")[:500]
+    result["dimension"] = str(result.get("dimension") or "专业知识")[:32]
     return result

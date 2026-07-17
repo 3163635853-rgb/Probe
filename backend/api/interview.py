@@ -41,6 +41,13 @@ class StartRequest(BaseModel):
     mode: str = "mixed"
     difficulty: int = 3
     jd_text: Optional[str] = None
+    resume_uuid: Optional[str] = None
+    organization_uuid: Optional[str] = None
+    rubric_uuid: Optional[str] = None
+    company_name: Optional[str] = None
+    interview_stage: Optional[str] = None
+    interviewer_role: Optional[str] = None
+    training_focus: Optional[str] = None
 
 
 class AnswerRequest(BaseModel):
@@ -56,6 +63,37 @@ async def start_interview(
 ):
     user, _ = auth
     await ensure_quota_initialized(user)
+
+    from models.career import ExperienceStory, Resume
+    from models.organization import Organization, OrganizationMember, ScoringRubric
+
+    resume_id = organization_id = rubric_id = None
+    resume_context = rubric_context = ""
+    if req.resume_uuid:
+        resume_result = await db.execute(select(Resume).where(Resume.uuid == req.resume_uuid, Resume.user_id == user.id))
+        resume = resume_result.scalar_one_or_none()
+        if not resume:
+            raise HTTPException(status_code=404, detail={"code": 40420, "message": "简历不存在"})
+        resume_id = resume.id
+        story_result = await db.execute(select(ExperienceStory).where(ExperienceStory.user_id == user.id).limit(8))
+        stories = list(story_result.scalars().all())
+        resume_context = (resume.raw_text[:5000] + "\nSTAR素材：" + "；".join(f"{item.title}:{item.action or ''}->{item.result or ''}" for item in stories))[:7000]
+    if req.organization_uuid:
+        org_result = await db.execute(
+            select(Organization, OrganizationMember).join(OrganizationMember, OrganizationMember.organization_id == Organization.id).where(Organization.uuid == req.organization_uuid, OrganizationMember.user_id == user.id, OrganizationMember.status == "active")
+        )
+        org_row = org_result.first()
+        if not org_row:
+            raise HTTPException(status_code=403, detail={"code": 40350, "message": "没有组织权限"})
+        organization_id = org_row[0].id
+    if req.rubric_uuid:
+        rubric_result = await db.execute(select(ScoringRubric).where(ScoringRubric.uuid == req.rubric_uuid, ScoringRubric.is_active.is_(True)))
+        rubric = rubric_result.scalar_one_or_none()
+        if not rubric or (not rubric.is_public and rubric.created_by != user.id and rubric.organization_id != organization_id):
+            raise HTTPException(status_code=403, detail={"code": 40370, "message": "评分标准不可用"})
+        rubric_id = rubric.id
+        import json as _json
+        rubric_context = _json.dumps(rubric.dimensions, ensure_ascii=False)[:4000]
 
     # 创建 session UUID 先生成，保证 Lua 脚本写入正确值
     session_uuid = str(uuid_lib.uuid4())
@@ -77,6 +115,13 @@ async def start_interview(
         mode_code=req.mode,
         difficulty=req.difficulty,
         jd_text=req.jd_text,
+        resume_id=resume_id,
+        organization_id=organization_id,
+        rubric_id=rubric_id,
+        company_name=(req.company_name or "")[:128] or None,
+        interview_stage=(req.interview_stage or "")[:32] or None,
+        interviewer_role=(req.interviewer_role or "")[:64] or None,
+        training_focus=(req.training_focus or "")[:128] or None,
         status="ongoing",
     )
     db.add(session)
@@ -103,6 +148,12 @@ async def start_interview(
         mode_code=req.mode,
         difficulty=req.difficulty,
         jd_text=req.jd_text or "",
+        resume_context=resume_context,
+        company_name=req.company_name or "",
+        interview_stage=req.interview_stage or "",
+        interviewer_role=req.interviewer_role or "",
+        training_focus=req.training_focus or "",
+        rubric_context=rubric_context,
     )
     await save_context(session_uuid, ctx)
 
@@ -224,6 +275,7 @@ async def get_report(
         "total_rounds": session.total_rounds,
         "rounds": [
             {
+                "round_id": r.id,
                 "round": r.round_num,
                 "question_type": r.question_type,
                 "probe_depth": r.probe_depth,

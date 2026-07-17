@@ -71,6 +71,13 @@ export interface StartInterviewRequest {
   mode: string;
   difficulty: number;
   jd_text?: string;
+  resume_uuid?: string;
+  company_name?: string;
+  interview_stage?: string;
+  interviewer_role?: string;
+  training_focus?: string;
+  organization_uuid?: string;
+  rubric_uuid?: string;
 }
 
 export interface StartInterviewResponse {
@@ -100,6 +107,7 @@ export interface InterviewHistoryItem {
 
 // Report
 export interface RoundDetail {
+  round_id: number;
   round: number;
   question_type: "initial" | "probe";
   probe_depth: number;
@@ -107,9 +115,12 @@ export interface RoundDetail {
   answer: string;
   score: number;
   evaluation: {
+    dimension?: string;
     strengths: string[];
     weaknesses: string[];
     suggestion: string;
+    evidence?: { type: "strength" | "weakness"; quote: string; reason: string }[];
+    structure?: { framework: string; complete: boolean; missing: string[] };
   };
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home, History, Crown, Bell, Gift, User, LogOut,
+  Home, History, Crown, Bell, Gift, User, LogOut, Sparkles,
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
@@ -13,6 +13,7 @@ import { useFetch } from "@/lib/hooks";
 const NAV_ITEMS = [
   { href: "/interview/setup", label: "面试", icon: Home },
   { href: "/history", label: "记录", icon: History },
+  { href: "/studio", label: "训练室", icon: Sparkles },
   { href: "/pricing", label: "套餐", icon: Crown },
   { href: "/invite", label: "邀请", icon: Gift },
   { href: "/notifications", label: "通知", icon: Bell },

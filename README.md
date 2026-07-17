@@ -12,6 +12,10 @@
 - **记忆系统** — 跨面试能力追踪，越练越懂你的薄弱点
 - **语音面试** — App 端支持语音输入 + AI 语音播报 (Whisper + Edge TTS)
 - **分享裂变** — 面试成绩单一键生成分享图
+- **候选人证据库** — 简历解析、STAR 故事质量检查与题目匹配推荐
+- **复练闭环** — 逐题立即重答、证据化评分、原回答/重答对比和多版本答案优化
+- **多模态表达训练** — Web/App 录像、语速/停顿/填充词/重复表达和基础目光指标
+- **专项训练室** — 3–8 分钟弱项快练、真人教练、组织 Rubric/题库和技术面工具
 
 ## 市场定位
 
@@ -39,11 +43,11 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 ## 项目规模
 
 ```
-代码量:    13,000+ 行 (Python + TypeScript)
-后端:      80+ 个源文件, 52 个 API/健康端点, 17 个路由模块
-Web 前端:  16 个页面, 10+ 个组件
-App:       17 个页面, 7 个组件
-数据库:    21 张 MySQL 表 + Redis 缓存 + 可选 FAISS 向量索引
+代码量:    18,000+ 行 (Python + TypeScript)
+后端:      90+ 个源文件, 134 个 API 方法/健康端点, 23 个路由模块
+Web 前端:  17 个页面, 20+ 个组件
+App:       18 个页面, 7 个组件
+数据库:    32 张 MySQL 表 + Redis 缓存 + 可选 FAISS 向量索引
 文档:      完整架构设计 + API 规范 + 任务清单
 ```
 
@@ -85,18 +89,18 @@ App:       17 个页面, 7 个组件
 Probe/
 ├── backend/              # Python FastAPI 后端
 │   ├── agent/            # 智能体核心 (planner/prober/evaluator/reporter)
-│   ├── api/              # 17 个路由模块, 52 个 API/健康端点
-│   ├── models/           # SQLAlchemy ORM (21 表)
+│   ├── api/              # 23 个路由模块, 134 个 API 方法/健康端点
+│   ├── models/           # SQLAlchemy ORM (32 表)
 │   ├── services/         # LLM / 语音 / 推送
 │   ├── knowledge/        # FAISS 向量检索 + embedding
 │   ├── memory/           # Redis 工作记忆
 │   └── BACKEND.md        # 完整后端接口文档
 ├── web/                  # Next.js 16 前端
-│   ├── app/              # 16 个页面 (含面试/报告/历史/隐私/微信回调等)
-│   ├── components/       # 10 个 UI 组件
+│   ├── app/              # 17 个页面 (含训练室/面试/报告/历史/隐私/微信回调等)
+│   ├── components/       # 20+ 个 UI 组件
 │   └── lib/              # API/SSE/Auth 封装
 ├── mobile/               # Expo React Native App
-│   ├── app/              # 17 个页面 (含语音面试)
+│   ├── app/              # 18 个页面 (含训练室、录像和语音面试)
 │   ├── components/       # 7 个原生组件 (雷达图/录音/播放)
 │   └── lib/              # API/SSE/Auth/Audio
 ├── doc/                  # 架构文档
@@ -155,6 +159,7 @@ npx expo start
 | [App 开发计划](doc/implementation/PHASE2_APP.md) | Expo 3 周任务清单 |
 | [上线检查清单](doc/implementation/PRODUCTION_READINESS.md) | 支付商户材料、部署步骤与生产验证 |
 | [端到端功能链路](doc/implementation/END_TO_END_CHAIN.md) | 全功能链路、时序图、验收结果与发布配置 |
+| [高级训练系统](doc/implementation/ADVANCED_TRAINING.md) | 简历、复练、视频、教练、企业和技术面能力说明 |
 
 ## 版本规划
 
@@ -163,7 +168,7 @@ npx expo start
 | 1 | Web + 后端 + Agent 核心 + 知识库 | ✅ 完成 |
 | 2 | React Native App + 语音面试 | ✅ 完成 |
 | 3 | 微信小程序 | 待开发（支付已在 Web/App 完成） |
-| 4 | 企业版 + 英文面试 | 待开发 |
+| 4 | 企业训练空间 + 教练 + 技术面工具 | ✅ 完成（SSO/保留策略配置需部署方接入身份源） |
 
 ## 质量保障
 
@@ -176,7 +181,7 @@ npx expo start
 - CD: 迁移优先、健康检查等待、失败日志与自动停止
 - 微信支付 API v3: JSAPI/H5 下单、RSA 验签、AES-GCM 回调解密、幂等履约
 - 分享图片: 服务端生成、持久化、渠道记录与点击统计
-- 自动化测试: 29 项后端测试，覆盖支付、分享、成长、长期画像、通知、知识库兜底和路由契约
+- 自动化测试: 33 项后端测试，覆盖支付、分享、成长、长期画像、通知、知识库兜底和路由契约
 
 ## 独立开发
 

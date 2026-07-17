@@ -9,6 +9,7 @@ import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import type { InterviewReport } from "@/lib/types";
+import { RetryRound } from "@/components/RetryRound";
 import {
   RadarChart,
   Radar,
@@ -212,7 +213,21 @@ function ReportContent() {
                       <Lightbulb className="w-3.5 h-3.5 shrink-0 text-primary" /> {r.evaluation.suggestion}
                     </p>
                   )}
+                  {r.evaluation?.evidence?.length ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {r.evaluation.evidence.map((item, index) => (
+                        <div key={index} className={`rounded-lg border px-3 py-2 text-xs ${item.type === "strength" ? "border-success/20 bg-success/5" : "border-destructive/20 bg-destructive/5"}`}>
+                          <p className="font-semibold">“{item.quote}”</p>
+                          <p className="mt-1 text-muted-foreground">{item.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {r.evaluation?.structure && (
+                    <p className="mt-2 text-xs text-muted-foreground">回答结构：{r.evaluation.structure.framework} · {r.evaluation.structure.complete ? "完整" : `缺少 ${r.evaluation.structure.missing.join("、") || "关键环节"}`}</p>
+                  )}
                 </div>
+                <RetryRound round={r} />
               </div>
             </details>
           ))}

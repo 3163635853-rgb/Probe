@@ -39,7 +39,7 @@ def normalize_report(data: dict) -> dict:
     }
 
 
-async def report(rounds: list[dict], mode_code: str, difficulty: int) -> dict:
+async def report(rounds: list[dict], mode_code: str, difficulty: int, rubric_context: str = "") -> dict:
     """生成面试报告"""
     rounds_summary = []
     for r in rounds:
@@ -53,6 +53,7 @@ async def report(rounds: list[dict], mode_code: str, difficulty: int) -> dict:
 
     user_msg = f"""面试模式: {mode_code}
 难度等级: {difficulty}/5
+自定义评分标准: {rubric_context or '默认标准'}
 轮次数据:
 {json.dumps(rounds_summary, ensure_ascii=False, indent=2)}
 

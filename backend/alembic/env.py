@@ -10,6 +10,7 @@ from alembic import context
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from models.base import Base
+import models  # noqa: F401
 from models.user import User  # noqa: F401
 from models.interview import InterviewSession, InterviewRound  # noqa: F401
 from models.knowledge import KnowledgeQuestion  # noqa: F401

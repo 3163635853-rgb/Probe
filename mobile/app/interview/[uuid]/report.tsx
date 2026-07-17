@@ -1,15 +1,15 @@
-import { View, Text, ScrollView, TouchableOpacity, Share } from "react-native";
+import { ActivityIndicator, View, Text, TextInput, ScrollView, TouchableOpacity, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { ArrowLeft, Share2, ThumbsUp, AlertTriangle } from "lucide-react-native";
+import { ArrowLeft, Share2, ThumbsUp, AlertTriangle, Repeat2, TrendingUp } from "lucide-react-native";
 import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
 import { useState } from "react";
 import { getScoreColorClass } from "@/lib/utils";
 import { RadarChart } from "@/components/RadarChart";
-import type { InterviewReport } from "@/lib/types";
+import type { InterviewReport, RoundDetail } from "@/lib/types";
 
 export default function ReportScreen() {
   const { uuid } = useLocalSearchParams<{ uuid: string }>();
@@ -208,6 +208,8 @@ export default function ReportScreen() {
                 <Text className="text-xs leading-5 text-muted-foreground">
                   {r.answer}
                 </Text>
+                {r.evaluation?.evidence?.length ? <View className="mt-3 gap-2">{r.evaluation.evidence.map((item, index) => <View key={index} className={`rounded-lg p-2 ${item.type === "strength" ? "bg-emerald-50" : "bg-red-50"}`}><Text className={`text-xs font-semibold ${item.type === "strength" ? "text-success" : "text-destructive"}`}>“{item.quote}”</Text><Text className="mt-1 text-xs text-muted-foreground">{item.reason}</Text></View>)}</View> : null}
+                <RetryCard round={r} />
               </View>
             </MotiView>
           ))}
@@ -215,4 +217,29 @@ export default function ReportScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+
+function RetryCard({ round }: { round: RoundDetail }) {
+  const [open, setOpen] = useState(false);
+  const [answer, setAnswer] = useState(round.answer || "");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ score: number; comparison: { score_delta: number; added_quantification: number }; optimized_answers: { concise: string } } | null>(null);
+
+  async function submit() {
+    if (!answer.trim()) return;
+    setLoading(true);
+    try {
+      const data = await fetchAPI<{ score: number; comparison: { score_delta: number; added_quantification: number }; optimized_answers: { concise: string } }>(`/practice/rounds/${round.round_id}/retry`, { method: "POST", body: JSON.stringify({ answer }) });
+      setResult(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return <View className="mt-4 border-t border-border pt-3">
+    <TouchableOpacity onPress={() => setOpen((value) => !value)} className="flex-row items-center justify-center gap-2 rounded-xl bg-primary py-3"><Repeat2 size={15} color="white" /><Text className="text-xs font-semibold text-white">{open ? "收起重答" : "立即重答并比较"}</Text></TouchableOpacity>
+    {open && <View className="mt-3 rounded-xl bg-secondary p-3"><TextInput value={answer} onChangeText={setAnswer} multiline textAlignVertical="top" placeholder="根据点评重新回答…" placeholderTextColor="#a8a29e" className="min-h-32 rounded-xl border border-input bg-white p-3 text-sm text-foreground" /><TouchableOpacity onPress={submit} disabled={loading || !answer.trim()} className="mt-2 flex-row items-center justify-center rounded-xl bg-foreground py-3 disabled:opacity-50">{loading ? <ActivityIndicator size="small" color="white" /> : <Text className="text-xs font-semibold text-white">提交第二次回答</Text>}</TouchableOpacity>{result && <View className="mt-3 gap-3"><View className="flex-row items-center justify-center gap-3 rounded-xl bg-white p-3"><Text className="text-2xl font-bold text-muted-foreground">{round.score}</Text><TrendingUp size={18} color="#0d9488" /><Text className="text-3xl font-bold text-success">{result.score}</Text><Text className="text-xs font-semibold text-success">+{result.comparison.score_delta}</Text></View><View className="rounded-xl bg-white p-3"><Text className="text-xs font-semibold text-primary">推荐 60 秒版本</Text><Text className="mt-2 text-sm leading-6 text-foreground">{result.optimized_answers.concise}</Text></View></View>}
+    </View>}
+  </View>;
 }

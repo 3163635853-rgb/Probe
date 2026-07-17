@@ -16,7 +16,12 @@
   "dimension": "专业知识",
   "strengths": ["提到了具体方案", "有实际案例"],
   "weaknesses": ["缺少性能考量", "没有量化数据"],
-  "suggestion": "可以补充 QPS 预估和瓶颈分析"
+  "suggestion": "可以补充 QPS 预估和瓶颈分析",
+  "evidence": [
+    {"type": "strength", "quote": "使用了多级缓存", "reason": "给出了具体方案"},
+    {"type": "weakness", "quote": "高并发时应该可以", "reason": "缺少量化和验证方法"}
+  ],
+  "structure": {"framework": "结论-方案-风险", "complete": true, "missing": []}
 }
 ```
 
@@ -33,3 +38,5 @@
 3. suggestion 必须是可执行的具体建议
 4. 评分要与难度等级匹配：低难度题满分标准低于高难度题
 5. 若候选人跳过或回答为空，score=0
+6. evidence 必须引用候选人回答中的短句作为评分证据；若回答为空则为空数组
+7. structure 描述回答框架、完整性和缺失环节

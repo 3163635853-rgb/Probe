@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, String, DateTime, Integer, JSON
+from sqlalchemy import BigInteger, String, DateTime, Integer, JSON, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 from typing import Optional
@@ -24,4 +24,6 @@ class User(Base, FullTimestampMixin):
     push_token: Mapped[Optional[str]] = mapped_column(String(256))
     device_id: Mapped[Optional[str]] = mapped_column(String(64))
     platform: Mapped[Optional[str]] = mapped_column(String(16))
+    is_coach: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)

@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
-import { Mic, ClipboardList, Sparkles, User } from "lucide-react-native";
+import { Mic, ClipboardList, Sparkles, User, Dumbbell } from "lucide-react-native";
 
 export default function MainLayout() {
   return (
@@ -47,6 +47,13 @@ export default function MainLayout() {
         options={{
           title: "成长",
           tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="studio"
+        options={{
+          title: "训练",
+          tabBarIcon: ({ color, size }) => <Dumbbell size={size} color={color} />,
         }}
       />
       <Tabs.Screen

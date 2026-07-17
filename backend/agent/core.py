@@ -34,6 +34,12 @@ class AgentContext:
     started_at: float = field(default_factory=time.time)
     recent_rounds: list[dict] = field(default_factory=list)
     user_profile: str = ""
+    resume_context: str = ""
+    company_name: str = ""
+    interview_stage: str = ""
+    interviewer_role: str = ""
+    training_focus: str = ""
+    rubric_context: str = ""
 
 
 # Redis keys
@@ -70,6 +76,12 @@ async def save_context(session_id: str, ctx: AgentContext):
         "jd_text": ctx.jd_text,
         "industry_id": ctx.industry_id,
         "position_id": ctx.position_id,
+        "resume_context": ctx.resume_context,
+        "company_name": ctx.company_name,
+        "interview_stage": ctx.interview_stage,
+        "interviewer_role": ctx.interviewer_role,
+        "training_focus": ctx.training_focus,
+        "rubric_context": ctx.rubric_context,
     }
     await redis_client.set(key, json.dumps(data, ensure_ascii=False), ex=SESSION_TTL)
 
