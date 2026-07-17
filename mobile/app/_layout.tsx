@@ -38,10 +38,18 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     if (!startupDone.current) {
       startupDone.current = true;
-      // 按顺序执行：版本检查优先（可能阻断），然后检查活跃面试
+      // 冷启动通知优先于活跃面试恢复，避免两个异步跳转互相覆盖。
       (async () => {
-        await checkAppVersion(); // 如果需要强制更新，Alert 会阻断后续
-        registerPushToken();
+        await checkAppVersion();
+        void registerPushToken();
+        const notificationResponse = await Notifications.getLastNotificationResponseAsync();
+        if (notificationResponse) {
+          const data = notificationResponse.notification.request.content.data as Record<string, unknown>;
+          const target = notificationRoute(data);
+          router.push(target as "/" | `/${string}`);
+          await Notifications.clearLastNotificationResponseAsync();
+          return;
+        }
         const activeUuid = await checkActiveInterview();
         if (activeUuid) router.replace(`/interview/${activeUuid}`);
       })();
@@ -51,13 +59,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const navigateFromResponse = (response: Notifications.NotificationResponse | null) => {
-      if (!response) return;
+    const navigateFromResponse = (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data as Record<string, unknown>;
       const target = notificationRoute(data);
       router.push(target as "/" | `/${string}`);
+      void Notifications.clearLastNotificationResponseAsync();
     };
-    void Notifications.getLastNotificationResponseAsync().then(navigateFromResponse);
     const subscription = Notifications.addNotificationResponseReceivedListener(navigateFromResponse);
     return () => subscription.remove();
   }, [user, router]);

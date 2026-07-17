@@ -4,6 +4,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -38,7 +39,9 @@ export default function NotificationsScreen() {
     try {
       await fetchAPI("/notification/read-all", { method: "PUT" });
       refetch();
-    } catch {}
+    } catch {
+      Alert.alert("操作失败", "暂时无法更新通知状态，请稍后重试");
+    }
   }
 
   return (
@@ -86,9 +89,9 @@ export default function NotificationsScreen() {
                   if (!item.is_read) {
                     await fetchAPI(`/notification/${item.id}/read`, { method: "PUT" });
                   }
+                  await refetch();
                   const target = notificationRoute(item.data);
                   router.push(target as "/" | `/${string}`);
-                  await refetch();
                 }}
                 activeOpacity={0.7}
               >

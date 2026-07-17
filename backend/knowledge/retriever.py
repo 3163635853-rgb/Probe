@@ -18,6 +18,8 @@ class QuestionResult:
     difficulty: int
     industry_id: int
     position_id: int | None
+    reference_answer: str = ""
+    scoring_criteria: str = ""
 
 
 class FAISSRetriever:
@@ -66,7 +68,7 @@ class FAISSRetriever:
                 continue
             if industry_id is not None and meta.get("industry_id") != industry_id:
                 continue
-            if position_id is not None and meta.get("position_id") != position_id:
+            if position_id is not None and meta.get("position_id") not in (position_id, None):
                 continue
             if difficulty is not None and abs(meta.get("difficulty", 3) - difficulty) > 1:
                 continue
@@ -79,6 +81,8 @@ class FAISSRetriever:
                 difficulty=meta.get("difficulty", 3),
                 industry_id=meta.get("industry_id", 0),
                 position_id=meta.get("position_id"),
+                reference_answer=meta.get("reference_answer") or "",
+                scoring_criteria=meta.get("scoring_criteria") or "",
             ))
             if len(results) >= top_k:
                 break

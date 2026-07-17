@@ -208,8 +208,13 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                 jd_text=jd_text,
                 user_profile=user_profile_text,
             )
-            plan_data = plan_result.get("outline", [])
-            max_rounds = plan_result.get("total_rounds", 10)
+            raw_outline = plan_result.get("outline")
+            if not isinstance(raw_outline, list):
+                raise ValueError("Planner outline is not a list")
+            plan_data = [item for item in raw_outline if isinstance(item, dict)][:15]
+            if not plan_data:
+                raise ValueError("Planner returned an empty outline")
+            max_rounds = len(plan_data)
         except Exception as e:
             logger.warning(f"Plan generation failed, using default: {e}")
             plan_data = [{"round": i + 1, "type": "tech", "topic": "通用", "difficulty": difficulty} for i in range(10)]
@@ -228,7 +233,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         # 出题
         await save_state(session_uuid, AgentState.QUESTIONING, current_round)
 
-        question_text, q_source = await _generate_question(
+        question_text, q_source, knowledge_question_id, reference_answer, scoring_criteria = await _generate_question(
             plan_item, mode_code, difficulty, jd_text, recent_rounds,
             session_uuid=session_uuid,
             industry_id=ctx_data.get("industry_id") if ctx_data else None,
@@ -268,6 +273,8 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                 question=question_text,
                 answer=answer_text,
                 difficulty=difficulty,
+                reference_answer=reference_answer,
+                scoring_criteria=scoring_criteria,
             )
         except Exception as e:
             logger.warning(f"Evaluation failed: {e}")
@@ -294,6 +301,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                 evaluation=eval_result,
                 score=score,
                 question_source=q_source,
+                knowledge_question_id=knowledge_question_id,
             )
             db.add(ir)
             # 更新 session total_rounds
@@ -445,7 +453,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             rounds_result = await db.execute(
                 select(InterviewRound)
                 .where(InterviewRound.session_id == session_db_id)
-                .order_by(asc(InterviewRound.round_num))
+                .order_by(asc(InterviewRound.round_num), asc(InterviewRound.probe_depth), asc(InterviewRound.id))
             )
             db_rounds = rounds_result.scalars().all()
             if db_rounds:
@@ -548,8 +556,8 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     yield await _push_event(session_uuid, seq, "done", {})
 
 
-async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, jd_text: str, recent_rounds: list, session_uuid: str = "", industry_id: int | None = None, position_id: int | None = None) -> tuple[str, str]:
-    """根据计划项生成面试题。返回 (question_text, source)"""
+async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, jd_text: str, recent_rounds: list, session_uuid: str = "", industry_id: int | None = None, position_id: int | None = None) -> tuple[str, str, int | None, str, str]:
+    """返回题目、来源、题库 ID、参考答案和评分标准。"""
     from services.llm import chat, CHAT_PARAMS
     from knowledge.service import retrieve_question
     from memory.working import get_asked_ids
@@ -574,7 +582,14 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
         if results:
             from memory.working import mark_asked
             await mark_asked(session_uuid, results[0].id)
-            return results[0].question, "knowledge_base"
+            selected = results[0]
+            return (
+                selected.question,
+                "knowledge_base",
+                selected.id,
+                selected.reference_answer,
+                selected.scoring_criteria,
+            )
     except Exception as e:
         logger.debug(f"Knowledge retrieval failed, falling back to AI: {e}")
 
@@ -599,10 +614,10 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
 
     messages = [{"role": "user", "content": prompt}]
     try:
-        return await chat(messages, CHAT_PARAMS), source
+        return await chat(messages, CHAT_PARAMS), source, None, "", ""
     except Exception as e:
         logger.warning(f"Question generation failed: {e}")
-        return "请介绍一下你最近做的一个项目，你在其中承担了什么角色？", "ai"
+        return "请介绍一下你最近做的一个项目，你在其中承担了什么角色？", "ai", None, "", ""
 
 
 async def _wait_for_answer(session_uuid: str, timeout: int = 900):

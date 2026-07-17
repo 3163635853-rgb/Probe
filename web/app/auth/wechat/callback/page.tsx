@@ -2,13 +2,24 @@
 
 import { useEffect } from "react";
 
+const ALLOWED_RETURN_PROTOCOLS = new Set(["probe:", "exp:", "exps:"]);
+
 export default function WechatMobileCallbackPage() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get("code");
     const state = searchParams.get("state");
     const error = searchParams.get("error") || searchParams.get("errmsg");
-    const target = new URL("probe://auth/wechat");
+    const returnTo = searchParams.get("return_to");
+    let target = new URL("probe://auth/wechat");
+    if (returnTo) {
+      try {
+        const candidate = new URL(returnTo);
+        if (ALLOWED_RETURN_PROTOCOLS.has(candidate.protocol)) target = candidate;
+      } catch {
+        // 使用生产 App scheme 作为安全回退。
+      }
+    }
     if (code) target.searchParams.set("code", code);
     if (state) target.searchParams.set("state", state);
     if (error) target.searchParams.set("error", error);

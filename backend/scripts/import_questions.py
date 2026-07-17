@@ -65,6 +65,8 @@ async def import_questions():
             "position_id": q.position_id,
             "question_type": q.question_type,
             "difficulty": q.difficulty,
+            "reference_answer": q.reference_answer or "",
+            "scoring_criteria": q.scoring_criteria or "",
         }
         for q in all_questions
     ]

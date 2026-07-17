@@ -48,8 +48,14 @@ async def _grant_pending_reward(
     """返回 (本次是否执行 Redis 发奖, 邀请者是否获得奖励)。"""
     global _grant_reward_script
     if record.reward_given:
-        return False, False
+        return False, record.inviter_reward_given
 
+    # 锁住邀请码行，串行化同一邀请者的奖励上限计算。
+    await db.execute(
+        select(InviteCode.id)
+        .where(InviteCode.id == invite.id)
+        .with_for_update()
+    )
     rewarded_result = await db.execute(
         select(func.count()).select_from(InviteRecord).where(
             InviteRecord.inviter_user_id == record.inviter_user_id,

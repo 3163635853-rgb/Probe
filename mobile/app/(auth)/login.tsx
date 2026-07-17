@@ -65,10 +65,12 @@ export default function LoginScreen() {
     try {
       const state = Crypto.randomUUID().replaceAll("-", "");
       const returnUrl = Linking.createURL("auth/wechat");
+      const oauthCallback = new URL(String(callbackUrl));
+      oauthCallback.searchParams.set("return_to", returnUrl);
       const authUrl =
         "https://open.weixin.qq.com/connect/oauth2/authorize" +
         `?appid=${encodeURIComponent(String(appId))}` +
-        `&redirect_uri=${encodeURIComponent(String(callbackUrl))}` +
+        `&redirect_uri=${encodeURIComponent(oauthCallback.toString())}` +
         "&response_type=code&scope=snsapi_userinfo" +
         `&state=${encodeURIComponent(state)}#wechat_redirect`;
       const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);

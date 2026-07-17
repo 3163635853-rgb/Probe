@@ -179,7 +179,7 @@ export default function ReportScreen() {
           </Text>
           {report.rounds.map((r, index) => (
             <MotiView
-              key={r.round}
+              key={`${r.round}-${r.probe_depth}`}
               from={{ opacity: 0, translateY: 10 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: "timing", duration: 300, delay: 600 + index * 80 }}
@@ -193,7 +193,7 @@ export default function ReportScreen() {
                       </Text>
                     </View>
                     <Text className="text-xs text-muted-foreground">
-                      第 {r.round} 题
+                      第 {r.round} 题{r.question_type === "probe" ? ` · 追问 ${r.probe_depth}` : ""}
                     </Text>
                   </View>
                   <View className={`rounded-full px-2.5 py-0.5 ${getScoreColorClass(r.score)}`}>

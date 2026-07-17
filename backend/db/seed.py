@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy import select
 from db.mysql import AsyncSessionLocal
 from models.config import Industry, Position, InterviewMode, DifficultyConfig
+from models.achievement import Achievement
 
 INDUSTRIES = [
     {"name": "互联网", "icon": "💻", "sort_order": 1, "description": "互联网/科技"},
@@ -102,6 +103,16 @@ MODES = [
     {"code": "mixed", "name": "综合面", "description": "综合考察多维能力", "default_rounds": 10, "default_duration_min": 35, "applicable_categories": ["tech", "product", "design", "operation", "management", "sales"], "dimension_weights": {"专业知识": 0.25, "问题解决": 0.25, "逻辑表达": 0.2, "沟通能力": 0.15, "抗压能力": 0.15}},
 ]
 
+
+ACHIEVEMENTS = [
+    {"code": "first_interview", "name": "初试啼声", "description": "完成第一次模拟面试", "icon": "trophy", "condition_type": "interview_count", "condition_value": 1},
+    {"code": "three_interviews", "name": "渐入佳境", "description": "累计完成 3 次模拟面试", "icon": "flame", "condition_type": "interview_count", "condition_value": 3},
+    {"code": "ten_interviews", "name": "百炼成钢", "description": "累计完成 10 次模拟面试", "icon": "medal", "condition_type": "interview_count", "condition_value": 10},
+    {"code": "thirty_interviews", "name": "面试达人", "description": "累计完成 30 次模拟面试", "icon": "crown", "condition_type": "interview_count", "condition_value": 30},
+    {"code": "score_80", "name": "优秀候选人", "description": "单场面试总分达到 80 分", "icon": "star", "condition_type": "score", "condition_value": 80},
+    {"code": "score_90", "name": "Offer 收割机", "description": "单场面试总分达到 90 分", "icon": "sparkles", "condition_type": "score", "condition_value": 90},
+]
+
 DIFFICULTIES = [
     {"level": 1, "name": "入门", "description": "适合应届生/转行新人", "question_complexity": "基础概念、定义类问题", "expected_answer_depth": "能说出关键词和基本流程即可", "probe_aggressiveness": "low"},
     {"level": 2, "name": "初级", "description": "适合1年以内经验", "question_complexity": "基础原理、简单应用", "expected_answer_depth": "能解释原理并举简单例子", "probe_aggressiveness": "low"},
@@ -113,10 +124,18 @@ DIFFICULTIES = [
 
 async def seed():
     async with AsyncSessionLocal() as session:
-        # Check if already seeded
+        # 成就配置独立幂等补齐，兼容已经初始化过行业数据的旧环境。
+        achievement_result = await session.execute(select(Achievement.code))
+        existing_achievement_codes = {row[0] for row in achievement_result.all()}
+        for data in ACHIEVEMENTS:
+            if data["code"] not in existing_achievement_codes:
+                session.add(Achievement(**data, reward_type="badge", reward_value=0, is_active=True))
+        await session.commit()
+
+        # Check if base config is already seeded
         result = await session.execute(select(Industry).limit(1))
         if result.scalar_one_or_none():
-            print("Already seeded, skipping.")
+            print(f"Base config already seeded; achievements ensured: {len(ACHIEVEMENTS)}")
             return
 
         # Industries
@@ -147,7 +166,7 @@ async def seed():
             session.add(diff)
 
         await session.commit()
-        print(f"Seeded: {len(INDUSTRIES)} industries, {sum(len(v) for v in POSITIONS.values())} positions, {len(MODES)} modes, {len(DIFFICULTIES)} difficulties")
+        print(f"Seeded: {len(INDUSTRIES)} industries, {sum(len(v) for v in POSITIONS.values())} positions, {len(MODES)} modes, {len(DIFFICULTIES)} difficulties, {len(ACHIEVEMENTS)} achievements")
 
 
 if __name__ == "__main__":

@@ -101,6 +101,8 @@ export interface InterviewHistoryItem {
 // Report
 export interface RoundDetail {
   round: number;
+  question_type: "initial" | "probe";
+  probe_depth: number;
   question: string;
   answer: string;
   score: number;

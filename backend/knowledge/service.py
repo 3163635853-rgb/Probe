@@ -54,6 +54,19 @@ async def retrieve_question(
                 exclude_ids=excluded,
             )
             if results:
+                # 旧 FAISS metadata 可能没有参考答案；始终以 MySQL 为权威补全评分材料。
+                async with AsyncSessionLocal() as db:
+                    db_result = await db.execute(
+                        select(KnowledgeQuestion).where(
+                            KnowledgeQuestion.id.in_([item.id for item in results])
+                        )
+                    )
+                    question_map = {item.id: item for item in db_result.scalars().all()}
+                for item in results:
+                    source = question_map.get(item.id)
+                    if source:
+                        item.reference_answer = source.reference_answer or ""
+                        item.scoring_criteria = source.scoring_criteria or ""
                 return results
         except Exception:
             # Embedding 服务异常时继续使用数据库兜底，不影响面试主流程。
@@ -85,6 +98,8 @@ async def retrieve_question(
             difficulty=item.difficulty,
             industry_id=item.industry_id,
             position_id=item.position_id,
+            reference_answer=item.reference_answer or "",
+            scoring_criteria=item.scoring_criteria or "",
         )
         for item in candidates[:top_k]
     ]

@@ -136,6 +136,6 @@ async def load_user_profile(db: AsyncSession, user_id: int) -> tuple[dict[str, A
     if not user:
         return {}, ""
     profile = user.weak_points if isinstance(user.weak_points, dict) else {}
-    if not profile and user.total_interviews:
+    if not profile:
         profile = await refresh_user_profile(db, user_id)
     return profile, render_profile(profile)

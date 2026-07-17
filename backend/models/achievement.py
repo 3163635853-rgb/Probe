@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import BigInteger, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
 from typing import Optional
@@ -22,6 +22,9 @@ class Achievement(Base, TimestampMixin):
 
 class UserAchievement(Base):
     __tablename__ = "user_achievements"
+    __table_args__ = (
+        UniqueConstraint("user_id", "achievement_id", name="uk_user_achievement"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)

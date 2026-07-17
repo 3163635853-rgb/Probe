@@ -4,7 +4,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from pydantic import BaseModel, EmailStr
 from typing import Literal, Optional
 
@@ -44,7 +44,6 @@ class ProfileUpdateRequest(BaseModel):
 class WechatLoginRequest(BaseModel):
     code: str
     channel: Literal["web", "mobile", "miniprogram"] = "miniprogram"
-    invite_code: Optional[str] = None
 
 
 @router.post("/wechat")
@@ -120,7 +119,10 @@ async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_d
                 except Exception:
                     pass
 
-    result = await db.execute(select(User).where(User.openid == openid))
+    identity_filter = User.openid == openid
+    if union_id:
+        identity_filter = or_(identity_filter, User.union_id == union_id)
+    result = await db.execute(select(User).where(identity_filter))
     user = result.scalar_one_or_none()
     is_new = False
 

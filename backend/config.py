@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL: str = "mimo-v2-pro"
     EMBEDDING_MODEL: str = "text-embedding-v1"
     EMBEDDING_DIM: int = 1024
+    TRANSCRIPTION_API_KEY: str = ""
+    TRANSCRIPTION_BASE_URL: str = "https://api.openai.com/v1"
+    TRANSCRIPTION_MODEL: str = "whisper-1"
 
     # WeChat / WeChat Pay API v3
     WX_APP_ID: str = ""

@@ -89,7 +89,6 @@ uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | code | string | 是 | wx.login() 返回的 code |
-| invite_code | string | 否 | 邀请码 |
 
 ```json
 → 同 register 响应格式
@@ -413,7 +412,7 @@ JSAPI 要求当前用户绑定与 `WX_APP_ID` 对应的 openid；H5 不要求 op
 
 ### POST /speech/transcribe — 语音转文字 (Whisper)
 
-multipart/form-data, file 字段, 最大 25MB
+multipart/form-data, file 字段, 最大 25MB。需要独立配置 `TRANSCRIPTION_API_KEY`、`TRANSCRIPTION_BASE_URL`、`TRANSCRIPTION_MODEL`；未配置返回 50303。
 
 ```json
 → {"code":0,"data":{"text":"我认为...","duration_sec":45}}

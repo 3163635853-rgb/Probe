@@ -100,7 +100,7 @@ function ReportContent() {
           /* 对话回放 */
           <div className="space-y-4">
             {report.rounds.map((r) => (
-              <div key={r.round} className="space-y-3">
+              <div key={`${r.round}-${r.probe_depth}`} className="space-y-3">
                 {/* AI 提问 */}
                 <div className="flex items-start gap-3">
                   <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
@@ -179,9 +179,11 @@ function ReportContent() {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold">逐题详情</h2>
           {report.rounds.map((r) => (
-            <details key={r.round} className="rounded-lg border border-border bg-card shadow-sm">
+            <details key={`${r.round}-${r.probe_depth}`} className="rounded-lg border border-border bg-card shadow-sm">
               <summary className="cursor-pointer px-4 py-3 flex items-center justify-between">
-                <span className="text-sm font-medium">第 {r.round} 题</span>
+                <span className="text-sm font-medium">
+                  第 {r.round} 题{r.question_type === "probe" ? ` · 追问 ${r.probe_depth}` : ""}
+                </span>
                 <span className="text-sm text-muted-foreground">{r.score}/10</span>
               </summary>
               <div className="border-t border-border px-4 py-4 space-y-3 text-sm">

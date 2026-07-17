@@ -31,10 +31,12 @@ async def transcribe(
     if len(content) > MAX_AUDIO_SIZE:
         raise HTTPException(status_code=400, detail={"code": 40102, "message": "音频文件不能超过 25MB"})
 
-    # 调 Whisper API (OpenAI 兼容)
+    # 语音识别使用独立的 OpenAI 兼容服务，避免误把音频请求发给纯文本模型端点。
+    if not settings.TRANSCRIPTION_API_KEY:
+        raise HTTPException(status_code=503, detail={"code": 50303, "message": "语音识别服务未配置"})
     client = AsyncOpenAI(
-        api_key=settings.DEEPSEEK_API_KEY or "sk-placeholder",
-        base_url=settings.DEEPSEEK_BASE_URL,
+        api_key=settings.TRANSCRIPTION_API_KEY,
+        base_url=settings.TRANSCRIPTION_BASE_URL,
     )
 
     # 写临时文件
@@ -45,7 +47,7 @@ async def transcribe(
     try:
         with open(tmp_path, "rb") as audio_file:
             transcript = await client.audio.transcriptions.create(
-                model="whisper-1",
+                model=settings.TRANSCRIPTION_MODEL,
                 file=audio_file,
             )
 

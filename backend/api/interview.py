@@ -199,7 +199,7 @@ async def get_report(
     rounds_result = await db.execute(
         select(InterviewRound)
         .where(InterviewRound.session_id == session.id)
-        .order_by(InterviewRound.round_num)
+        .order_by(InterviewRound.round_num, InterviewRound.probe_depth, InterviewRound.id)
     )
     rounds = rounds_result.scalars().all()
 
@@ -225,6 +225,8 @@ async def get_report(
         "rounds": [
             {
                 "round": r.round_num,
+                "question_type": r.question_type,
+                "probe_depth": r.probe_depth,
                 "question": r.question,
                 "answer": r.answer,
                 "score": r.score,
