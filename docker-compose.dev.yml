@@ -14,8 +14,15 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-sk-placeholder}
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://token-plan-cn.xiaomimimo.com/v1}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-mimo-v2-pro}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v1}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
       WX_APP_ID: ${WX_APP_ID:-}
       WX_APP_SECRET: ${WX_APP_SECRET:-}
+      WX_WEB_APP_ID: ${WX_WEB_APP_ID:-}
+      WX_WEB_APP_SECRET: ${WX_WEB_APP_SECRET:-}
+      WX_MOBILE_APP_ID: ${WX_MOBILE_APP_ID:-}
+      WX_MOBILE_APP_SECRET: ${WX_MOBILE_APP_SECRET:-}
+      DAILY_REMINDER_ENABLED: "false"
       PUBLIC_API_URL: http://localhost:8000
       PUBLIC_WEB_URL: http://localhost:3000
       SHARE_STORAGE_DIR: /app/data/share_images
@@ -39,6 +46,7 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_WECHAT_APPID: ${WX_WEB_APP_ID:-}
 
   mysql:
     image: mysql:8.0

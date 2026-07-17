@@ -11,11 +11,17 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { Mail, Lock, Eye, EyeOff, MessageCircle } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
+import * as Crypto from "expo-crypto";
+import Constants from "expo-constants";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
-  const { login, register } = useAuth();
+  const { login, register, loginWithWechat } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +48,43 @@ export default function LoginScreen() {
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : (mode === "login" ? "登录失败" : "注册失败"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleWechatLogin() {
+    const appId = Constants.expoConfig?.extra?.wechatAppId;
+    const callbackUrl = Constants.expoConfig?.extra?.wechatCallbackUrl;
+    if (!appId || !callbackUrl) {
+      setError("微信登录尚未配置，请使用邮箱登录");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const state = Crypto.randomUUID().replaceAll("-", "");
+      const returnUrl = Linking.createURL("auth/wechat");
+      const authUrl =
+        "https://open.weixin.qq.com/connect/oauth2/authorize" +
+        `?appid=${encodeURIComponent(String(appId))}` +
+        `&redirect_uri=${encodeURIComponent(String(callbackUrl))}` +
+        "&response_type=code&scope=snsapi_userinfo" +
+        `&state=${encodeURIComponent(state)}#wechat_redirect`;
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+      if (result.type !== "success") {
+        if (result.type !== "cancel") setError("微信授权未完成");
+        return;
+      }
+      const redirect = new URL(result.url);
+      const code = redirect.searchParams.get("code");
+      const returnedState = redirect.searchParams.get("state");
+      if (!code || returnedState !== state) {
+        throw new Error("微信登录状态校验失败");
+      }
+      await loginWithWechat(code);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "微信登录失败");
     } finally {
       setLoading(false);
     }
@@ -153,6 +196,22 @@ export default function LoginScreen() {
                   </Text>
                 )}
               </LinearGradient>
+            </TouchableOpacity>
+
+            <View className="flex-row items-center gap-3 py-1">
+              <View className="h-px flex-1 bg-border" />
+              <Text className="text-xs text-muted-foreground">或</Text>
+              <View className="h-px flex-1 bg-border" />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleWechatLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+              className="h-14 flex-row items-center justify-center gap-2 rounded-xl border border-border bg-white"
+            >
+              <MessageCircle size={19} color="#16a34a" />
+              <Text className="text-base font-semibold text-foreground">微信登录</Text>
             </TouchableOpacity>
           </MotiView>
 

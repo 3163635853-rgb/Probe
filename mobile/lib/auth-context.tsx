@@ -17,6 +17,7 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, nickname?: string) => Promise<void>;
+  loginWithWechat: (code: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthState>({
   loading: true,
   login: async () => {},
   register: async () => {},
+  loginWithWechat: async () => {},
   logout: async () => {},
 });
 
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const u = await fetchAPI<User>("/auth/me");
       setUser(u);
+      void fetchAPI("/invite/retry-reward", { method: "POST" }).catch(() => undefined);
       return true;
     } catch {
       await clearToken();
@@ -101,13 +104,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }, []);
 
+  const loginWithWechat = useCallback(async (code: string) => {
+    const res = await fetchAPI<LoginResponse>("/auth/wechat", {
+      method: "POST",
+      body: JSON.stringify({ code, channel: "mobile" }),
+    });
+    await setToken(res.token);
+    const u = await fetchAPI<User>("/auth/me");
+    setUser(u);
+  }, []);
+
   const logout = useCallback(async () => {
     await clearToken();
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithWechat, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
+import asyncio
 from sqlalchemy import text
 
 import models  # noqa: F401 - register complete ORM metadata
@@ -36,9 +37,21 @@ setup_logging(debug=settings.DEBUG)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_client.ping()
-    yield
-    await redis_client.aclose()
-    await engine.dispose()
+    reminder_task = None
+    if settings.DAILY_REMINDER_ENABLED:
+        from services.reminders import reminder_loop
+        reminder_task = asyncio.create_task(reminder_loop(), name="daily-reminder")
+    try:
+        yield
+    finally:
+        if reminder_task:
+            reminder_task.cancel()
+            try:
+                await reminder_task
+            except asyncio.CancelledError:
+                pass
+        await redis_client.aclose()
+        await engine.dispose()
 
 
 app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
@@ -111,8 +124,10 @@ async def health():
         await redis_client.ping()
     except Exception:
         redis_ok = False
+    from knowledge.service import knowledge_status
     return {
         "status": "ok" if (mysql_ok and redis_ok) else "degraded",
         "mysql": "ok" if mysql_ok else "error",
         "redis": "ok" if redis_ok else "error",
+        "knowledge": knowledge_status(),
     }

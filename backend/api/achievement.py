@@ -95,6 +95,6 @@ async def check_and_grant_achievements(user_id: int, db: AsyncSession):
             newly_granted.append(a.name)
 
     if newly_granted:
-        await db.commit()
+        await db.flush()
 
     return newly_granted

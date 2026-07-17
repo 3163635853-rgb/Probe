@@ -29,7 +29,7 @@ export default function LoginPage() {
     if (!code) return;
     // 验证 OAuth state 防止 CSRF
     const savedState = sessionStorage.getItem("oauth_state");
-    if (state && savedState && state !== savedState) {
+    if (!state || !savedState || state !== savedState) {
       void Promise.resolve().then(() => setError("登录状态异常，请重试"));
       return;
     }
@@ -37,7 +37,7 @@ export default function LoginPage() {
     void Promise.resolve().then(() => setLoading(true));
     fetchAPI<LoginResponse>("/auth/wechat", {
       method: "POST",
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, channel: "web" }),
     })
       .then((data) => {
         login(data.token, data.user);
@@ -72,9 +72,10 @@ export default function LoginPage() {
   // 微信扫码登录 URL（由后端生成，这里拼接开放平台 OAuth 地址）
   const [wechatAuthUrl, setWechatAuthUrl] = useState("");
   useEffect(() => {
-    const appId = process.env.NEXT_PUBLIC_WECHAT_APPID || "APPID";
+    const appId = process.env.NEXT_PUBLIC_WECHAT_APPID || "";
+    if (!appId) return;
     const redirectUri = encodeURIComponent(window.location.origin + "/login");
-    const state = Math.random().toString(36).slice(2, 18);
+    const state = crypto.randomUUID().replaceAll("-", "");
     sessionStorage.setItem("oauth_state", state);
     const timer = window.setTimeout(() => {
       setWechatAuthUrl(`https://open.weixin.qq.com/connect/qrconnect?appid=${appId}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login&state=${state}#wechat_redirect`);
@@ -110,13 +111,16 @@ export default function LoginPage() {
           /* 微信扫码 */
           <div className="rounded-lg border border-border bg-card p-6 text-center space-y-4">
             <div className="mx-auto w-52 h-52 rounded-lg bg-secondary flex items-center justify-center overflow-hidden">
-              {/* 微信开放平台二维码 iframe */}
-              <iframe
-                src={wechatAuthUrl}
-                className="w-full h-full border-0 scale-[0.8] origin-center"
-                title="微信扫码登录"
-                sandbox="allow-scripts allow-same-origin allow-top-navigation"
-              />
+              {wechatAuthUrl ? (
+                <iframe
+                  src={wechatAuthUrl}
+                  className="w-full h-full border-0 scale-[0.8] origin-center"
+                  title="微信扫码登录"
+                  sandbox="allow-scripts allow-same-origin allow-top-navigation"
+                />
+              ) : (
+                <p className="px-5 text-sm text-muted-foreground">微信开放平台 AppID 尚未配置，请暂时使用邮箱登录</p>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">打开微信扫一扫登录</p>
           </div>

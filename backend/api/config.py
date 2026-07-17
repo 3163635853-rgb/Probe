@@ -5,6 +5,7 @@ from typing import Optional
 
 from db.mysql import get_db
 from models.config import Industry, Position, InterviewMode, DifficultyConfig
+from config import settings
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 
@@ -90,10 +91,10 @@ async def get_app_version():
     return {
         "code": 0,
         "data": {
-            "latest_version": "1.1.0",
-            "min_version": "1.0.0",
-            "force_update": False,
-            "update_url": "",
+            "latest_version": settings.APP_LATEST_VERSION,
+            "min_version": settings.APP_MIN_VERSION,
+            "force_update": settings.APP_FORCE_UPDATE,
+            "update_url": settings.APP_UPDATE_URL,
             "changelog": "新增成长中心：等级、XP、连续训练、每周目标、能力聚焦与每日任务",
         },
     }

@@ -13,8 +13,8 @@
 - [x] 服务端分享图、持久化文件、分享记录和点击统计
 - [x] 头像完整 URL、公开缓存读取和上传文件持久卷
 - [x] SSE ticket、Bearer Header 和旧 query token 三层认证回退
-- [x] App 1.1.0 成长中心全栈模块与 20 项后端测试
-- [x] Alembic 新迁移与 21 张 ORM 表对齐
+- [x] App 1.1.0 成长中心全栈模块与 25 项后端测试
+- [x] Alembic 新迁移与 21 张 ORM 表对齐（含邀请双方奖励履约字段）
 - [x] CI 覆盖 backend tests/migrations、Web lint/build、Mobile check、Compose config
 - [x] CD 在启动应用前执行迁移，并在健康失败时输出日志和终止
 - [x] Docker Compose 去除废弃 version 字段，分享图片使用独立持久卷
@@ -43,3 +43,16 @@ docker compose run --rm backend uv run alembic upgrade head
 docker compose up -d backend web caddy
 curl -fsS https://api.probe.app/health
 ```
+
+## 2026-07-17 新增代码闭环
+
+- [x] 追问回答评估、持久化和报告汇总
+- [x] 最近 12 场报告聚合为长期能力画像，并注入下一场 Planner
+- [x] 成就自动发放，报告/成就/邀请/支付/每日提醒站内通知
+- [x] Expo Push 点击路由、Android 通知频道和无 EAS ID 安全降级
+- [x] 邀请奖励 Redis Lua 幂等发放、数据库状态补偿和客户端登录后自动重试
+- [x] FAISS 不可用时 MySQL 题库检索兜底，健康接口暴露索引状态
+- [x] Web 开放平台 OAuth 与 Mobile 微信 OAuth 回调链路
+- [x] 隐私政策、用户协议和 Mobile 全局离线提示
+
+仍需由账号/平台所有者提供：微信开放平台审核信息、EAS Project ID、应用商店签名与商店后台材料。这些不是可提交到 Git 的代码。

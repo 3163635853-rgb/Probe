@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Literal, Optional
 
 from config import settings
 from db.mysql import get_db
@@ -43,36 +43,83 @@ class ProfileUpdateRequest(BaseModel):
 
 class WechatLoginRequest(BaseModel):
     code: str
+    channel: Literal["web", "mobile", "miniprogram"] = "miniprogram"
     invite_code: Optional[str] = None
 
 
 @router.post("/wechat")
 async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_db)):
-    """微信登录: code → openid → 查/建用户 → JWT"""
-    if settings.DEBUG and not settings.WX_APP_ID:
-        # 开发模式 mock（DEBUG=True 且未配置 WX_APP_ID 才生效）
-        openid = f"dev_{req.code}"
-    elif not settings.WX_APP_ID:
+    """微信登录：支持开放平台 Web OAuth 和小程序 code2session。"""
+    web_app_id = settings.WX_WEB_APP_ID or settings.WX_APP_ID
+    web_secret = settings.WX_WEB_APP_SECRET or settings.WX_APP_SECRET
+    mobile_app_id = settings.WX_MOBILE_APP_ID or web_app_id
+    mobile_secret = settings.WX_MOBILE_APP_SECRET or web_secret
+    if req.channel == "web":
+        app_id, app_secret = web_app_id, web_secret
+    elif req.channel == "mobile":
+        app_id, app_secret = mobile_app_id, mobile_secret
+    else:
+        app_id, app_secret = settings.WX_APP_ID, settings.WX_APP_SECRET
+
+    if settings.DEBUG and not app_id:
+        openid = f"dev_{req.channel}_{req.code}"
+        union_id = None
+        nickname = "微信测试用户"
+        avatar = None
+    elif not app_id or not app_secret:
         raise HTTPException(status_code=503, detail={"code": 50003, "message": "微信登录未配置"})
     else:
-        # 调微信 API
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                "https://api.weixin.qq.com/sns/jscode2session",
-                params={
-                    "appid": settings.WX_APP_ID,
-                    "secret": settings.WX_APP_SECRET,
-                    "js_code": req.code,
-                    "grant_type": "authorization_code",
-                },
-                timeout=10,
-            )
-            data = resp.json()
-            if "openid" not in data:
+        async with httpx.AsyncClient(timeout=10) as client:
+            if req.channel in ("web", "mobile"):
+                resp = await client.get(
+                    "https://api.weixin.qq.com/sns/oauth2/access_token",
+                    params={
+                        "appid": app_id,
+                        "secret": app_secret,
+                        "code": req.code,
+                        "grant_type": "authorization_code",
+                    },
+                )
+            else:
+                resp = await client.get(
+                    "https://api.weixin.qq.com/sns/jscode2session",
+                    params={
+                        "appid": app_id,
+                        "secret": app_secret,
+                        "js_code": req.code,
+                        "grant_type": "authorization_code",
+                    },
+                )
+            try:
+                data = resp.json()
+            except ValueError as exc:
+                raise HTTPException(status_code=502, detail={"code": 50004, "message": "微信服务响应异常"}) from exc
+            if resp.status_code >= 400 or "openid" not in data:
                 raise HTTPException(status_code=401, detail={"code": 40001, "message": "微信授权失败"})
             openid = data["openid"]
+            union_id = data.get("unionid")
+            nickname = "微信用户"
+            avatar = None
 
-    # 查或建用户
+            # Web OAuth 可继续拉取公开资料；失败不影响登录。
+            if req.channel in ("web", "mobile") and data.get("access_token"):
+                try:
+                    profile_resp = await client.get(
+                        "https://api.weixin.qq.com/sns/userinfo",
+                        params={
+                            "access_token": data["access_token"],
+                            "openid": openid,
+                            "lang": "zh_CN",
+                        },
+                    )
+                    profile_data = profile_resp.json()
+                    if not profile_data.get("errcode"):
+                        nickname = profile_data.get("nickname") or nickname
+                        avatar = profile_data.get("headimgurl")
+                        union_id = profile_data.get("unionid") or union_id
+                except Exception:
+                    pass
+
     result = await db.execute(select(User).where(User.openid == openid))
     user = result.scalar_one_or_none()
     is_new = False
@@ -81,12 +128,20 @@ async def wechat_login(req: WechatLoginRequest, db: AsyncSession = Depends(get_d
         user = User(
             uuid=str(uuid_lib.uuid4()),
             openid=openid,
-            nickname=f"微信用户",
+            union_id=union_id,
+            nickname=nickname,
+            avatar=avatar,
         )
         db.add(user)
         await db.commit()
         await db.refresh(user)
         is_new = True
+    else:
+        if union_id and not user.union_id:
+            user.union_id = union_id
+        if avatar and not user.avatar:
+            user.avatar = avatar
+        await db.commit()
 
     token, expires_at = create_token(user.id, user.uuid)
 

@@ -23,9 +23,15 @@ services:
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://token-plan-cn.xiaomimimo.com/v1}
       DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-mimo-v2-pro}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-text-embedding-v1}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-1024}
       JWT_SECRET: ${JWT_SECRET}
       WX_APP_ID: ${WX_APP_ID}
       WX_APP_SECRET: ${WX_APP_SECRET}
+      WX_WEB_APP_ID: ${WX_WEB_APP_ID:-}
+      WX_WEB_APP_SECRET: ${WX_WEB_APP_SECRET:-}
+      WX_MOBILE_APP_ID: ${WX_MOBILE_APP_ID:-}
+      WX_MOBILE_APP_SECRET: ${WX_MOBILE_APP_SECRET:-}
       WECHAT_PAY_MCH_ID: ${WECHAT_PAY_MCH_ID}
       WECHAT_PAY_MCH_SERIAL_NO: ${WECHAT_PAY_MCH_SERIAL_NO}
       WECHAT_PAY_PRIVATE_KEY_PATH: ${WECHAT_PAY_PRIVATE_KEY_PATH:-/run/secrets/wechat/apiclient_key.pem}
@@ -39,6 +45,12 @@ services:
       SHARE_FONT_PATH: /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
       UPLOAD_STORAGE_DIR: /app/data/uploads
       CORS_ORIGINS: ${CORS_ORIGINS:-https://probe.app,https://www.probe.app}
+      APP_LATEST_VERSION: ${APP_LATEST_VERSION:-1.1.0}
+      APP_MIN_VERSION: ${APP_MIN_VERSION:-1.0.0}
+      APP_FORCE_UPDATE: ${APP_FORCE_UPDATE:-false}
+      APP_UPDATE_URL: ${APP_UPDATE_URL:-}
+      DAILY_REMINDER_ENABLED: ${DAILY_REMINDER_ENABLED:-true}
+      DAILY_REMINDER_HOUR: ${DAILY_REMINDER_HOUR:-20}
       DEBUG: "false"
     volumes:
       - ./secrets/wechat:/run/secrets/wechat:ro
@@ -67,6 +79,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: https://api.probe.app/api
         NEXT_PUBLIC_SITE_URL: https://probe.app
+        NEXT_PUBLIC_WECHAT_APPID: ${WX_WEB_APP_ID:-}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 10s

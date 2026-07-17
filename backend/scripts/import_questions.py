@@ -69,7 +69,13 @@ async def import_questions():
         for q in all_questions
     ]
 
-    retriever = FAISSRetriever()
+    if not vectors:
+        print("No vectors returned; FAISS index was not built.")
+        return
+    vector_dim = len(vectors[0])
+    if any(len(vector) != vector_dim for vector in vectors):
+        raise RuntimeError("Embedding API returned inconsistent vector dimensions")
+    retriever = FAISSRetriever(dim=vector_dim)
     retriever.build_index(vectors, metadata)
     retriever.save("knowledge")
     print(f"FAISS index built and saved: {len(texts)} vectors.")

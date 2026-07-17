@@ -98,6 +98,7 @@ class FAISSRetriever:
         if not index_path.exists() or not meta_path.exists():
             return False
         self.index = faiss.read_index(str(index_path))
+        self.dim = self.index.d
         with open(meta_path, "r", encoding="utf-8") as f:
             self.metadata = json.load(f)
         return True

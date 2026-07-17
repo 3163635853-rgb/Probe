@@ -4,7 +4,6 @@ import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { fetchAPI } from "./api";
 
-// 前台通知显示配置
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -15,10 +14,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-/**
- * 获取设备唯一标识
- * iOS: identifierForVendor, Android: androidId
- */
 async function getDeviceId(): Promise<string> {
   if (Platform.OS === "ios") {
     const id = await Application.getIosIdForVendorAsync();
@@ -27,26 +22,47 @@ async function getDeviceId(): Promise<string> {
   return Application.getAndroidId() || "unknown";
 }
 
-export async function registerPushToken(): Promise<string | null> {
-  const { status: existingStatus } =
-    await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+export function notificationRoute(data: Record<string, unknown> | undefined): string {
+  const screen = typeof data?.screen === "string" ? data.screen : "notifications";
+  if (screen === "report" && typeof data?.session_uuid === "string") {
+    return `/interview/${data.session_uuid}/report`;
+  }
+  const routes: Record<string, string> = {
+    achievements: "/achievements",
+    invite: "/invite",
+    growth: "/(main)/growth",
+    membership: "/membership",
+    notifications: "/notifications",
+  };
+  return routes[screen] || "/notifications";
+}
 
+export async function registerPushToken(): Promise<string | null> {
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  if (!projectId || typeof projectId !== "string") {
+    // EAS 项目尚未绑定时不请求无效 token；邮箱登录和其余功能仍可使用。
+    return null;
+  }
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "Probe 通知",
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: "default",
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
   if (existingStatus !== "granted") {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
-
   if (finalStatus !== "granted") return null;
 
-  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const tokenData = await Notifications.getExpoPushTokenAsync({
-    projectId,
-  });
-  const token = tokenData.data;
-
-  // 上报后端（含 device_id）
   try {
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenData.data;
     const deviceId = await getDeviceId();
     await fetchAPI("/user/push-token", {
       method: "POST",
@@ -56,9 +72,9 @@ export async function registerPushToken(): Promise<string | null> {
         device_id: deviceId,
       }),
     });
+    return token;
   } catch {
-    // 静默失败，下次启动会重试
+    // 网络或 Expo 服务失败时，下次启动自动重试。
+    return null;
   }
-
-  return token;
 }

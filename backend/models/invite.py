@@ -27,6 +27,7 @@ class InviteRecord(Base, TimestampMixin):
     inviter_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id"))
     invitee_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
     reward_given: Mapped[bool] = mapped_column(Boolean, default=False)
+    inviter_reward_given: Mapped[bool] = mapped_column(Boolean, default=False)
 
     __table_args__ = (
         UniqueConstraint("invitee_user_id", name="uk_invitee"),

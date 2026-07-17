@@ -7,7 +7,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { registerPushToken } from "@/lib/notifications";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { notificationRoute, registerPushToken } from "@/lib/notifications";
+import * as Notifications from "expo-notifications";
 import { checkActiveInterview, checkAppVersion } from "@/lib/startup";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -46,6 +48,20 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, router]);
 
+
+  useEffect(() => {
+    if (!user) return;
+    const navigateFromResponse = (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      const target = notificationRoute(data);
+      router.push(target as "/" | `/${string}`);
+    };
+    void Notifications.getLastNotificationResponseAsync().then(navigateFromResponse);
+    const subscription = Notifications.addNotificationResponseReceivedListener(navigateFromResponse);
+    return () => subscription.remove();
+  }, [user, router]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: "#fafaf9", alignItems: "center", justifyContent: "center" }}>
@@ -65,6 +81,7 @@ export default function RootLayout() {
         <ErrorBoundary>
           <AuthProvider>
             <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+            <OfflineBanner />
             <AuthGuard>
               <Slot />
             </AuthGuard>

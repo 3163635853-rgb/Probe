@@ -1,342 +1,473 @@
-"use client";
-
 import Link from "next/link";
-import Image from "next/image";
-import { CountUp } from "@/components/CountUp";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  BrainCircuit,
+  Check,
+  ChevronRight,
+  CircleDot,
+  FileText,
+  Gauge,
+  Layers3,
+  MessageSquareText,
+  Mic2,
+  Play,
+  Quote,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TimerReset,
+  TrendingUp,
+  UserRound,
+  WandSparkles,
+  Zap,
+} from "lucide-react";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import {
-  Brain, Zap, BarChart3, Target, ArrowRight,
-  MessageSquare, FileText, Sparkles, Shield, Users, Clock,
-  ChevronRight, Layers, Code2, ExternalLink,
-} from "lucide-react";
+
+const PROCESS_STEPS = [
+  {
+    number: "01",
+    title: "选择目标岗位",
+    description: "技术、产品、运营、市场等岗位都能练，难度和面试风格由你控制。",
+    icon: Target,
+  },
+  {
+    number: "02",
+    title: "进入真实追问",
+    description: "AI 根据你的回答继续深挖，不照着固定题库机械念下一题。",
+    icon: MessageSquareText,
+  },
+  {
+    number: "03",
+    title: "拿到改进路径",
+    description: "每题即时反馈，结束后生成五维报告和下一轮训练重点。",
+    icon: TrendingUp,
+  },
+] as const;
+
+const FEATURES: Array<{
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  className: string;
+  detail: string;
+}> = [
+  {
+    title: "追着答案继续问",
+    description: "识别回答中的空白、矛盾和模糊表述，像真正的面试官一样往下追。",
+    icon: BrainCircuit,
+    className: "lg:col-span-2",
+    detail: "Planner · Prober · Evaluator",
+  },
+  {
+    title: "四种面试模式",
+    description: "技术面、行为面、情景面、压力面，覆盖不同轮次和岗位场景。",
+    icon: Layers3,
+    className: "",
+    detail: "按场景调节难度",
+  },
+  {
+    title: "回答完就知道问题",
+    description: "每道题即时评分，不用等到整场结束才发现表达偏题。",
+    icon: Gauge,
+    className: "",
+    detail: "内容 · 结构 · 深度",
+  },
+  {
+    title: "记住你的薄弱点",
+    description: "跨场训练持续记录能力变化，把下一次练习放在真正需要提升的地方。",
+    icon: TimerReset,
+    className: "lg:col-span-2",
+    detail: "长期成长轨迹",
+  },
+];
+
+const CAPABILITIES = [
+  { value: "4", label: "面试模式", note: "覆盖主流场景" },
+  { value: "5", label: "评分维度", note: "定位回答短板" },
+  { value: "51", label: "产品能力接口", note: "完整训练链路" },
+  { value: "24h", label: "随时可练", note: "不用等待约面" },
+] as const;
+
+const REPORT_POINTS = [
+  { icon: BarChart3, text: "五维雷达图看清能力分布" },
+  { icon: FileText, text: "逐题复盘，不只给总分" },
+  { icon: Zap, text: "自动生成下一轮训练重点" },
+  { icon: ShieldCheck, text: "面试记录只为你的成长服务" },
+] as const;
+
+const REPORT_DIMENSIONS = [
+  { label: "岗位理解", score: 88, width: "w-[88%]" },
+  { label: "表达结构", score: 82, width: "w-[82%]" },
+  { label: "内容深度", score: 76, width: "w-[76%]" },
+  { label: "逻辑清晰", score: 85, width: "w-[85%]" },
+  { label: "应变能力", score: 73, width: "w-[73%]" },
+] as const;
+
+function InterviewPreview() {
+  return (
+    <div className="probe-stage relative mx-auto w-full max-w-[560px] overflow-hidden rounded-[30px] border border-stone-900/10 bg-stone-950 text-stone-50 shadow-[0_32px_90px_rgba(28,25,23,0.24)] dark:border-white/10">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
+      <div className="probe-stage-scan absolute inset-x-10 top-0 h-24 bg-gradient-to-b from-amber-300/10 to-transparent blur-xl" />
+
+      <div className="relative flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-stone-950">
+            <BrainCircuit className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">产品经理 · 模拟一面</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">第 4 / 8 题 · 深度追问中</p>
+          </div>
+        </div>
+        <span className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+          LIVE
+        </span>
+      </div>
+
+      <div className="relative space-y-5 px-5 py-6 sm:px-7 sm:py-7">
+        <div className="flex gap-3">
+          <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-300/20 bg-amber-300/10">
+            <Sparkles className="h-4 w-4 text-amber-300" />
+          </div>
+          <div className="max-w-[88%] rounded-2xl rounded-tl-sm border border-white/10 bg-white/[0.06] px-4 py-3.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300">AI 面试官</p>
+            <p className="mt-2 text-sm leading-6 text-stone-100 sm:text-[15px]">
+              你提到上线后留存提升了 18%。这个结果里，哪一部分最能证明是你的策略起了作用？
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <div className="max-w-[86%] rounded-2xl rounded-tr-sm bg-amber-400 px-4 py-3.5 text-stone-950">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-700">你的回答</p>
+            <p className="mt-2 text-sm leading-6 sm:text-[15px]">我们重做了新用户引导，把关键动作从 5 步缩短到 3 步……</p>
+          </div>
+          <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+            <UserRound className="h-4 w-4 text-stone-300" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+              <CircleDot className="h-3.5 w-3.5" />
+              正在分析回答
+            </div>
+            <span className="font-mono text-[10px] text-stone-500">2.4s</span>
+          </div>
+          <div className="mt-4 flex h-8 items-end gap-1.5" aria-hidden="true">
+            {[14, 24, 18, 30, 22, 28, 16, 25, 32, 19, 27, 15, 23, 29, 18, 25].map((height, index) => (
+              <span
+                key={`${height}-${index}`}
+                className="probe-wave-bar w-full rounded-full bg-gradient-to-t from-amber-500 to-amber-200"
+                style={{ height, animationDelay: `${index * 70}ms` }}
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {["缺少归因证据", "指标口径需澄清", "适合继续追问"].map((tag) => (
+              <span key={tag} className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] text-stone-300">{tag}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative flex items-center justify-between border-t border-white/10 px-5 py-4 text-xs text-stone-400 sm:px-7">
+        <span className="inline-flex items-center gap-2"><Mic2 className="h-4 w-4 text-amber-300" />支持语音回答</span>
+        <span className="font-mono">04:26</span>
+      </div>
+    </div>
+  );
+}
+
+function ReportPreview() {
+  return (
+    <div className="relative overflow-hidden rounded-[28px] border border-stone-800 bg-stone-950 p-5 text-stone-50 shadow-[0_30px_80px_rgba(28,25,23,0.18)] sm:p-7">
+      <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-amber-400/10 blur-3xl" />
+      <div className="relative flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">Interview report</p>
+          <h3 className="mt-2 text-xl font-bold">产品经理 · 模拟一面</h3>
+          <p className="mt-1 text-xs text-stone-500">8 道题 · 26 分钟 · 已完成</p>
+        </div>
+        <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">较上次 +7</span>
+      </div>
+
+      <div className="relative mt-6 grid gap-5 sm:grid-cols-[0.72fr_1.28fr]">
+        <div className="flex min-h-48 flex-col justify-between rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-5">
+          <div>
+            <p className="text-xs text-stone-400">综合表现</p>
+            <div className="mt-2 flex items-end gap-2">
+              <span className="text-6xl font-bold tracking-[-0.07em] text-amber-300">82</span>
+              <span className="pb-2 text-sm text-stone-500">/ 100</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-stone-100">优势：结构清晰</p>
+            <p className="mt-1 text-xs leading-5 text-stone-400">能先给结论，再用数据支撑判断。</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">五维能力分布</p>
+            <BarChart3 className="h-4 w-4 text-amber-300" />
+          </div>
+          <div className="mt-5 space-y-4">
+            {REPORT_DIMENSIONS.map((dimension) => (
+              <div key={dimension.label}>
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="text-stone-400">{dimension.label}</span>
+                  <span className="font-mono text-stone-200">{dimension.score}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className={`${dimension.width} h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-200`} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-5 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+          <Sparkles className="h-4 w-4" />下一轮优先练习
+        </div>
+        <p className="mt-3 text-sm leading-6 text-stone-300">回答结果类问题时，补充基准数据和对照组，避免把“参与了项目”说成“证明了影响”。</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["结果归因", "数据口径", "STAR 收尾"].map((tag) => (
+            <span key={tag} className="rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] text-stone-400">{tag}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col min-h-screen overflow-hidden">
-      {/* NAV */}
-      <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-background/80 border-b border-border/50">
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-16">
-          <Link href="/" className="text-xl font-bold text-primary tracking-tight">Probe</Link>
-          <div className="hidden sm:flex items-center gap-8 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">功能</a>
-            <a href="#how-it-works" className="hover:text-foreground transition-colors">流程</a>
-            <a href="#tech" className="hover:text-foreground transition-colors">技术</a>
-            <a href="#stats" className="hover:text-foreground transition-colors">数据</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">登录</Link>
-            <Link href="/interview/setup" className="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">开始面试</Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* HERO */}
-      <section className="relative flex flex-col items-center justify-center min-h-screen px-4 pt-32 pb-24">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          {/* AI 生成的背景图 */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-            <Image src="/hero-bg.png" alt="" fill priority sizes="100vw" className="object-cover" />
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
-          <div className="absolute top-[10%] left-[5%] w-80 h-80 rounded-full bg-primary/[0.04] blur-3xl animate-float" />
-          <div className="absolute bottom-[15%] right-[5%] w-[28rem] h-[28rem] rounded-full bg-primary/[0.06] blur-3xl animate-float-delay" />
-          <div className="absolute inset-0 bg-[linear-gradient(var(--primary)/0.02_1px,transparent_1px),linear-gradient(90deg,var(--primary)/0.02_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-        </div>
-
-        <div className="animate-fade-in-up opacity-0 [animation-delay:200ms] [animation-fill-mode:forwards]">
-          <span className="inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/[0.04] px-5 py-2.5 text-sm font-medium text-primary backdrop-blur-sm">
-            <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-primary" /></span>
-            AI Agent 驱动 · 不只是 ChatBot
-          </span>
-        </div>
-
-        <h1 className="mt-10 text-center animate-fade-in-up opacity-0 [animation-delay:400ms] [animation-fill-mode:forwards]">
-          <span className="block text-[3.2rem] sm:text-6xl lg:text-[5.5rem] font-bold tracking-tight leading-[1.1]">面试练习</span>
-          <span className="block mt-3 text-[3.2rem] sm:text-6xl lg:text-[5.5rem] font-bold tracking-tight leading-[1.1]">从此有了<span className="text-primary">教练</span></span>
-        </h1>
-
-        <p className="mt-8 max-w-2xl text-center text-lg sm:text-xl text-muted-foreground leading-relaxed animate-fade-in-up opacity-0 [animation-delay:600ms] [animation-fill-mode:forwards]">
-          AI 智能体全程模拟真实面试，实时追问、即时评分、精准报告。<br className="hidden sm:block" />每一轮对话，都在帮你变得更强。
-        </p>
-        <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 animate-fade-in-up opacity-0 [animation-delay:800ms] [animation-fill-mode:forwards]">
-          <Link href="/interview/setup" className="group relative inline-flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300">
-            免费开始 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/88 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Probe 首页">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Quote className="h-4 w-4 fill-current" />
+            </span>
+            <span className="text-lg font-bold tracking-[-0.04em]">Probe</span>
           </Link>
-          <a href="#how-it-works" className="inline-flex items-center gap-1.5 rounded-full border border-border px-7 py-4 text-lg font-medium hover:bg-secondary hover:border-primary/20 transition-all duration-300">
-            看看怎么用 <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </a>
-        </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce opacity-40">
-          <div className="w-5 h-8 rounded-full border-2 border-muted-foreground/40 flex items-start justify-center pt-1.5">
-            <div className="w-1 h-2 rounded-full bg-muted-foreground/60" />
+          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="首页导航">
+            <a href="#experience" className="transition-colors hover:text-foreground">体验</a>
+            <a href="#how-it-works" className="transition-colors hover:text-foreground">流程</a>
+            <a href="#features" className="transition-colors hover:text-foreground">能力</a>
+            <a href="#report" className="transition-colors hover:text-foreground">报告</a>
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+            <Link href="/login" className="hidden text-sm font-medium transition-colors hover:text-primary sm:inline-flex">登录</Link>
+            <Link href="/interview/setup" className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary-hover sm:px-5 sm:text-sm">
+              <span className="sm:hidden">开始</span>
+              <span className="hidden sm:inline">开始面试</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" className="relative px-4 py-28 sm:py-36">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-secondary/60 via-secondary/30 to-transparent" />
-        <div className="mx-auto max-w-5xl">
-          <ScrollReveal>
-            <div className="text-center">
-              <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">使用流程</span>
-              <h2 className="text-3xl sm:text-5xl font-bold">三步，拿到你的面试报告</h2>
-            </div>
-          </ScrollReveal>
-          <div className="mt-20 relative">
-            <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
-              {[
-                { icon: MessageSquare, step: "01", title: "配置面试", desc: "选择行业岗位，设定难度，粘贴 JD 获得定制化面试体验" },
-                { icon: Sparkles, step: "02", title: "实战对话", desc: "AI 面试官实时追问、引导作答，完全模拟真实面试节奏" },
-                { icon: FileText, step: "03", title: "深度报告", desc: "五维雷达图 + 逐题回放 + 改进路径，清晰知道下一步练什么" },
-              ].map((item, i) => (
-                <ScrollReveal key={item.step} delay={i * 150} distance={30}>
-                  <div className="relative flex flex-col items-center text-center">
-                    <div className="relative z-10 inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-card border border-border shadow-md">
-                      <item.icon className="w-8 h-8 text-primary" />
-                      <span className="absolute -top-2 -right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-sm">{item.step}</span>
-                    </div>
-                    <h3 className="mt-6 text-lg font-semibold">{item.title}</h3>
-                    <p className="mt-2 max-w-xs text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <main>
+        <section id="experience" className="relative isolate overflow-hidden px-4 pb-20 pt-28 sm:px-6 sm:pb-28 sm:pt-36 lg:px-8 lg:pb-32 lg:pt-40">
+          <div className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(circle_at_18%_18%,rgba(245,158,11,0.14),transparent_30%),radial-gradient(circle_at_88%_30%,rgba(13,148,136,0.08),transparent_24%)]" />
+          <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.32] [background-image:linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_88%)]" />
 
-      {/* FEATURES */}
-      <section id="features" className="relative px-4 py-28 sm:py-36">
-        <div className="mx-auto max-w-6xl">
-          <ScrollReveal>
-            <div className="text-center">
-              <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">核心能力</span>
-              <h2 className="text-3xl sm:text-5xl font-bold leading-tight">不是问答机器<br />是<span className="text-primary">会思考的面试官</span></h2>
-            </div>
-          </ScrollReveal>
-          <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { icon: Brain, title: "自主决策的 AI Agent", desc: "面试官 Agent 自主规划面试流程，根据你的回答实时调整策略：追问薄弱点、跳过已掌握的领域、适时给出引导提示。", accent: "from-primary/10 to-primary/5" },
-              { icon: Zap, title: "逐题实时评分", desc: "不用等面试结束。每道题回答完毕，AI 即刻从多维度打分并给出简评，帮你实时感知自己的表现。", accent: "from-success/10 to-success/5" },
-              { icon: BarChart3, title: "五维深度报告", desc: "专业知识、逻辑表达、问题解决、沟通能力、抗压能力 — 雷达图 + 逐题点评 + 改进建议，一份报告看清全貌。", accent: "from-primary/10 to-primary/5" },
-              { icon: Target, title: "越练越懂你", desc: "记忆系统记住你的历史表现，下次面试自动强化薄弱环节，难度随能力动态升级。每次都有新挑战。", accent: "from-success/10 to-success/5" },
-            ].map((feat, i) => (
-              <ScrollReveal key={feat.title} delay={i * 100}>
-                <div className="group relative overflow-hidden rounded-3xl border border-border bg-card p-8 sm:p-10 hover:border-primary/20 hover:shadow-lg transition-all duration-500">
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feat.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                  <div className="relative">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                      <feat.icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="mt-6 text-xl font-semibold">{feat.title}</h3>
-                    <p className="mt-3 text-muted-foreground leading-relaxed">{feat.desc}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* DEMO PREVIEW */}
-      <section className="relative px-4 py-16 sm:py-24">
-        <div className="mx-auto max-w-4xl">
-          <ScrollReveal>
-            <div className="text-center mb-10">
-              <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">Live Preview</span>
-              <h2 className="text-2xl sm:text-4xl font-bold">一次面试，一份完整报告</h2>
-            </div>
-          </ScrollReveal>
-          <ScrollReveal delay={200} distance={50}>
-            <div className="rounded-3xl border border-border bg-card shadow-xl overflow-hidden">
-              <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-secondary/50">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-destructive/50" />
-                  <div className="w-3 h-3 rounded-full bg-primary/50" />
-                  <div className="w-3 h-3 rounded-full bg-success/50" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="px-4 py-1 rounded-md bg-background/80 text-xs text-muted-foreground border border-border/50">probe.app/report</div>
-                </div>
+          <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[minmax(0,0.94fr)_minmax(420px,1.06fr)] lg:gap-16">
+            <div className="max-w-2xl">
+              <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.06] px-3.5 py-2 text-xs font-semibold text-primary opacity-0 [animation-delay:120ms] [animation-fill-mode:forwards] sm:text-sm">
+                <WandSparkles className="h-4 w-4" />AI 深度追问 · 中文岗位训练
               </div>
-              <div className="relative">
-                <Image src="/report-mockup.png" alt="Probe 面试报告示例" width={1200} height={800} className="h-auto w-full" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-                  <Link href="/interview/setup" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
-                    生成我的报告 <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      {/* STATS */}
-      <section id="stats" className="relative px-4 py-28 sm:py-36">
-        <div className="mx-auto max-w-5xl">
-          <ScrollReveal>
-            <div className="rounded-3xl border border-border bg-card p-10 sm:p-16 shadow-sm">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
-                {[
-                  { value: 12847, suffix: "+", label: "面试完成", icon: MessageSquare },
-                  { value: 4200, suffix: "+", label: "注册用户", icon: Users },
-                  { value: 96, suffix: "%", label: "好评率", icon: Shield },
-                  { value: 35, suffix: "+", label: "覆盖岗位", icon: Clock },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <stat.icon className="w-5 h-5 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-3xl sm:text-4xl font-bold text-foreground"><CountUp target={stat.value} /><span className="text-primary">{stat.suffix}</span></p>
-                    <p className="mt-1.5 text-sm text-muted-foreground">{stat.label}</p>
-                  </div>
+              <h1 className="animate-fade-in-up mt-7 text-[clamp(2.75rem,6vw,4.65rem)] font-bold leading-[1.04] tracking-[-0.065em] opacity-0 [animation-delay:260ms] [animation-fill-mode:forwards]">
+                <span className="block">把每一次回答，</span>
+                <span className="mt-2 block text-primary">练成面试官</span>
+                <span className="block text-primary">想听的样子。</span>
+              </h1>
+
+              <p className="animate-fade-in-up mt-7 max-w-xl text-base leading-8 text-muted-foreground opacity-0 [animation-delay:400ms] [animation-fill-mode:forwards] sm:text-lg">
+                Probe 不会只念完题库。它会听懂你的回答、继续追问薄弱处，并把模糊表达变成下一轮能直接使用的改进建议。
+              </p>
+
+              <div className="animate-fade-in-up mt-9 flex flex-col gap-3 opacity-0 [animation-delay:540ms] [animation-fill-mode:forwards] sm:flex-row sm:items-center">
+                <Link href="/interview/setup" className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 font-semibold text-primary-foreground shadow-[0_14px_34px_rgba(217,119,6,0.24)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-[0_18px_40px_rgba(217,119,6,0.3)]">
+                  免费开始一场面试<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-border bg-card/70 px-6 py-3.5 font-medium transition-colors hover:bg-secondary">
+                  <Play className="h-4 w-4 fill-current text-primary" />看看它怎么追问
+                </a>
+              </div>
+
+              <div className="animate-fade-in-up mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground opacity-0 [animation-delay:680ms] [animation-fill-mode:forwards] sm:text-sm">
+                {["每月 3 次免费", "无需绑卡", "支持语音输入"].map((item) => (
+                  <span key={item} className="inline-flex items-center gap-1.5">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-success/10 text-success"><Check className="h-2.5 w-2.5" strokeWidth={3} /></span>
+                    {item}
+                  </span>
                 ))}
               </div>
             </div>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      {/* TECH ARCHITECTURE — 展示技术实力 */}
-      <section id="tech" className="relative px-4 py-28 sm:py-36">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-transparent via-secondary/40 to-transparent" />
-        <div className="mx-auto max-w-6xl">
-          <ScrollReveal>
-            <div className="text-center">
-              <span className="inline-block text-sm font-semibold text-primary uppercase tracking-wider mb-4">Technical Architecture</span>
-              <h2 className="text-3xl sm:text-5xl font-bold leading-tight">不是调 API 的玩具<br />是<span className="text-primary">完整的智能体系统</span></h2>
-            </div>
-          </ScrollReveal>
-
-          {/* Agent 架构图 */}
-          <ScrollReveal delay={200} distance={50}>
-            <div className="mt-16 rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* 左侧：架构可视化图 */}
-                <div className="flex items-center justify-center">
-                  <div className="relative w-full max-w-sm aspect-square rounded-2xl overflow-hidden border border-border/50 bg-background/50">
-                    <Image src="/architecture.png" alt="Probe Agent Architecture" fill sizes="(min-width: 1024px) 384px, 100vw" className="object-contain p-4" />
-                  </div>
-                </div>
-
-                {/* 右侧：技术栈标签 */}
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold flex items-center gap-2"><Layers className="w-5 h-5 text-primary" /> 技术栈</h3>
-                  <div className="space-y-4">
-                    {[
-                      { layer: "智能体", tags: ["自研 Agent Loop", "ReAct 架构", "4 子智能体", "状态机"] },
-                      { layer: "后端", tags: ["Python 3.12", "FastAPI", "SQLAlchemy 2.0", "SSE 流式"] },
-                      { layer: "AI", tags: ["DeepSeek API", "FAISS 向量检索", "BGE-M3 Embedding"] },
-                      { layer: "前端", tags: ["Next.js 16", "TypeScript", "Tailwind CSS", "Recharts"] },
-                      { layer: "基础设施", tags: ["Docker Compose", "MySQL 8", "Redis 7", "Caddy", "GitHub Actions"] },
-                    ].map(group => (
-                      <div key={group.layer}>
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.layer}</span>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {group.tags.map(tag => (
-                            <span key={tag} className="inline-block px-3 py-1.5 rounded-lg bg-secondary border border-border text-xs font-medium text-foreground hover:border-primary/30 hover:bg-primary/5 transition-colors cursor-default">{tag}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="animate-fade-in-up relative min-w-0 opacity-0 [animation-delay:420ms] [animation-fill-mode:forwards]">
+              <div className="absolute -left-10 top-16 hidden rounded-2xl border border-border bg-card p-3 shadow-lg xl:block">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">追问命中</p>
+                <p className="mt-1 text-2xl font-bold text-foreground">归因逻辑</p>
               </div>
+              <div className="absolute -right-8 bottom-20 z-10 hidden rounded-2xl border border-border bg-card p-3 shadow-lg xl:block">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">实时反馈</p>
+                <p className="mt-1 flex items-center gap-1.5 text-sm font-bold text-success"><TrendingUp className="h-4 w-4" />表达更具体</p>
+              </div>
+              <InterviewPreview />
             </div>
-          </ScrollReveal>
+          </div>
+        </section>
 
-          {/* 项目指标 */}
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "代码量", value: "16,000+", unit: "行" },
-              { label: "API 端点", value: "23+", unit: "个" },
-              { label: "数据库表", value: "20+", unit: "张" },
-              { label: "开发周期", value: "4", unit: "周" },
-            ].map((item, i) => (
-              <ScrollReveal key={item.label} delay={i * 100}>
-                <div className="rounded-2xl border border-border bg-card p-5 text-center hover:border-primary/20 transition-colors">
-                  <p className="text-2xl font-bold text-foreground">{item.value}<span className="text-sm font-normal text-muted-foreground ml-1">{item.unit}</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+        <section className="border-y border-border bg-card/55 px-4 py-7 sm:px-6 lg:px-8">
+          <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-4 gap-y-7 md:grid-cols-4">
+            {CAPABILITIES.map((item) => (
+              <div key={item.label} className="relative px-2 md:border-l md:border-border md:px-6 md:first:border-l-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold tracking-[-0.04em] sm:text-3xl">{item.value}</span>
+                  <span className="text-sm font-semibold">{item.label}</span>
                 </div>
-              </ScrollReveal>
+                <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* BUILDER — 开发者信息 */}
-      <section className="relative px-4 py-28 sm:py-36">
-        <div className="mx-auto max-w-4xl">
-          <ScrollReveal distance={50}>
-            <div className="rounded-3xl border border-border bg-card p-8 sm:p-12 shadow-sm">
-              <div className="flex flex-col sm:flex-row gap-8 items-start">
-                <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10">
-                  <Code2 className="w-9 h-9 text-primary" />
-                </div>
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <h3 className="text-2xl font-bold">独立全栈开发</h3>
-                    <p className="mt-2 text-muted-foreground leading-relaxed">
-                      从产品设计、架构设计、数据库建模，到后端 Agent 开发、前端实现、部署运维 — 全部由一个人独立完成。
-                      不是用模板拼凑的 demo，是可以服务真实用户的生产级系统。
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    {[
-                      { label: "架构设计", desc: "Agent 状态机 + 三层记忆 + 向量检索" },
-                      { label: "工程质量", desc: "完整 CI/CD + Docker + Alembic 迁移" },
-                      { label: "产品思维", desc: "竞品分析 → 差异化定位 → MVP 落地" },
-                    ].map(item => (
-                      <div key={item.label} className="p-3 rounded-xl bg-secondary/50 border border-border/50">
-                        <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{item.desc}</p>
+        <section id="how-it-works" className="px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <ScrollReveal className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">一场训练，三次推进</p>
+              <h2 className="mt-4 text-3xl font-bold tracking-[-0.045em] sm:text-5xl">不只是回答问题，而是完成一次可复用的进步。</h2>
+            </ScrollReveal>
+
+            <div className="mt-14 grid gap-5 lg:grid-cols-3">
+              {PROCESS_STEPS.map((step, index) => {
+                const Icon = step.icon;
+                return (
+                  <ScrollReveal key={step.number} delay={index * 110}>
+                    <article className="group relative h-full overflow-hidden rounded-[26px] border border-border bg-card p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg sm:p-8">
+                      <div className="absolute right-5 top-3 font-mono text-6xl font-bold text-foreground/[0.035]">{step.number}</div>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground"><Icon className="h-5 w-5" /></div>
+                      <p className="mt-8 font-mono text-xs font-semibold text-primary">STEP {step.number}</p>
+                      <h3 className="mt-2 text-xl font-bold">{step.title}</h3>
+                      <p className="mt-3 leading-7 text-muted-foreground">{step.description}</p>
+                    </article>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="bg-stone-950 px-4 py-24 text-stone-50 sm:px-6 sm:py-32 lg:px-8 dark:bg-black">
+          <div className="mx-auto max-w-7xl">
+            <ScrollReveal className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+              <div className="max-w-3xl">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-300">为什么练得更像真实面试</p>
+                <h2 className="mt-4 text-3xl font-bold tracking-[-0.045em] sm:text-5xl">把压力留在练习里，把清晰带到面试现场。</h2>
+              </div>
+              <p className="max-w-md text-sm leading-7 text-stone-400 sm:text-base">每个能力都服务同一件事：让你发现“自我感觉回答不错”和“面试官真的听懂并相信”之间的差距。</p>
+            </ScrollReveal>
+
+            <div className="mt-14 grid gap-4 lg:grid-cols-3">
+              {FEATURES.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <ScrollReveal key={feature.title} delay={index * 80} className={feature.className}>
+                    <article className="group relative h-full min-h-[270px] overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.045] p-6 transition-colors hover:border-amber-300/30 hover:bg-white/[0.07] sm:p-8">
+                      <div className="absolute -bottom-16 -right-12 h-40 w-40 rounded-full bg-amber-300/[0.06] blur-3xl transition-colors group-hover:bg-amber-300/[0.12]" />
+                      <div className="relative flex h-full flex-col">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-amber-300"><Icon className="h-5 w-5" /></div>
+                          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-500">{feature.detail}</span>
+                        </div>
+                        <div className="mt-auto pt-12">
+                          <h3 className="text-2xl font-bold tracking-[-0.03em]">{feature.title}</h3>
+                          <p className="mt-3 max-w-xl leading-7 text-stone-400">{feature.description}</p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-4 pt-3">
-                    <a href="https://github.com/3163635853-rgb/Probe" target="_blank" rel="noopener" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                      <ExternalLink className="w-4 h-4" /> 查看源码
-                    </a>
-                    <span className="text-border">|</span>
-                    <span className="text-sm text-muted-foreground">全栈工程师 · 2026</span>
-                  </div>
-                </div>
+                    </article>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="report" className="overflow-hidden px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+          <div className="mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[0.78fr_1.22fr] lg:gap-20">
+            <ScrollReveal>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-primary">不止给分数</p>
+              <h2 className="mt-4 text-3xl font-bold tracking-[-0.045em] sm:text-5xl">报告要告诉你，下一次具体怎么答。</h2>
+              <p className="mt-6 text-base leading-8 text-muted-foreground sm:text-lg">从表达结构、内容深度到岗位匹配度，拆开每个失分点，并给出能直接带进下一轮练习的建议。</p>
+              <div className="mt-8 space-y-4">
+                {REPORT_POINTS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.text} className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-4 w-4" /></span>
+                      <span className="font-medium">{item.text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <Link href="/interview/setup" className="group mt-9 inline-flex items-center gap-2 font-semibold text-primary">生成我的第一份报告<ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
+            </ScrollReveal>
+
+            <ScrollReveal direction="left" distance={55}>
+              <div className="relative">
+                <div className="absolute -inset-8 -z-10 rounded-full bg-primary/10 blur-3xl" />
+                <ReportPreview />
+              </div>
+            </ScrollReveal>
+          </div>
+        </section>
+
+        <section className="px-4 pb-24 sm:px-6 sm:pb-32 lg:px-8">
+          <ScrollReveal className="mx-auto max-w-7xl">
+            <div className="relative overflow-hidden rounded-[34px] bg-primary px-6 py-14 text-primary-foreground sm:px-12 sm:py-16 lg:px-16">
+              <div className="absolute -right-24 -top-28 h-80 w-80 rounded-full border-[52px] border-white/10" />
+              <div className="absolute -bottom-28 right-36 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative max-w-3xl">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/70">下一次面试，从这次练习开始改变</p>
+                <h2 className="mt-4 text-3xl font-bold tracking-[-0.045em] sm:text-5xl">先把回答说出来，再把它练到更有说服力。</h2>
+                <p className="mt-5 max-w-2xl text-base leading-7 text-white/75 sm:text-lg">免费体验，无需绑卡。选择岗位和难度，几分钟后开始第一轮真实追问。</p>
+                <Link href="/interview/setup" className="group mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-stone-950 px-7 py-3.5 font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-stone-950">免费开始面试<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
               </div>
             </div>
           </ScrollReveal>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* BOTTOM CTA */}
-      <section className="relative px-4 py-28 sm:py-36">
-        <div className="absolute inset-0 -z-10 flex items-center justify-center overflow-hidden">
-          <div className="w-[600px] h-[600px] rounded-full bg-primary/[0.06] blur-[120px]" />
-        </div>
-        <ScrollReveal className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl sm:text-5xl font-bold leading-tight">下一个 Offer<br />从这里开始</h2>
-          <p className="mt-5 text-lg text-muted-foreground">免费体验，无需绑卡。每月 3 次免费面试机会。</p>
-          <Link href="/interview/setup" className="group inline-flex items-center gap-2 mt-10 rounded-full bg-primary px-10 py-4 text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.03] active:scale-[0.98] transition-all duration-300">
-            免费开始面试 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </ScrollReveal>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="border-t border-border px-6 py-10">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <span className="text-lg font-bold text-primary">Probe</span>
-            <nav className="hidden sm:flex gap-5 text-sm text-muted-foreground">
-              <a href="#features" className="hover:text-foreground transition-colors">功能</a>
-              <a href="#how-it-works" className="hover:text-foreground transition-colors">流程</a>
-              <Link href="/login" className="hover:text-foreground transition-colors">登录</Link>
-            </nav>
+      <footer className="border-t border-border px-4 py-9 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Quote className="h-4 w-4 fill-current" /></span>
+            <div><p className="font-bold">Probe</p><p className="text-xs text-muted-foreground">会追问、会复盘的 AI 面试教练</p></div>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 Probe. All rights reserved.</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <a href="#how-it-works" className="transition-colors hover:text-foreground">使用流程</a>
+            <a href="#features" className="transition-colors hover:text-foreground">产品能力</a>
+            <Link href="/pricing" className="transition-colors hover:text-foreground">会员方案</Link>
+            <Link href="/privacy" className="transition-colors hover:text-foreground">隐私政策</Link>
+            <Link href="/terms" className="transition-colors hover:text-foreground">用户协议</Link>
+            <Link href="/login" className="transition-colors hover:text-foreground">登录</Link>
+          </div>
+          <p className="text-xs text-muted-foreground">© 2026 Probe</p>
         </div>
       </footer>
     </div>

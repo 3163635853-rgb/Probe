@@ -13,6 +13,7 @@ import { useFetch } from "@/lib/hooks";
 import { useRefresh } from "@/lib/useRefresh";
 import { fetchAPI } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
+import { notificationRoute } from "@/lib/notifications";
 import type { PaginatedData } from "@/lib/types";
 
 interface Notification {
@@ -22,7 +23,8 @@ interface Notification {
   type: string;
   is_read: boolean;
   created_at: string;
-  data?: Record<string, string>;
+  data?: Record<string, unknown>;
+  related_url?: string | null;
 }
 
 export default function NotificationsScreen() {
@@ -84,14 +86,9 @@ export default function NotificationsScreen() {
                   if (!item.is_read) {
                     await fetchAPI(`/notification/${item.id}/read`, { method: "PUT" });
                   }
-                  // 白名单校验通知跳转路径
-                  const allowedPrefixes = ["/(main)/", "/interview/"];
-                  if (
-                    item.data?.screen &&
-                    allowedPrefixes.some((p) => item.data!.screen.startsWith(p))
-                  ) {
-                    router.push(item.data.screen as "/" | `/${string}`);
-                  }
+                  const target = notificationRoute(item.data);
+                  router.push(target as "/" | `/${string}`);
+                  await refetch();
                 }}
                 activeOpacity={0.7}
               >

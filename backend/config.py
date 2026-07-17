@@ -21,10 +21,16 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://token-plan-cn.xiaomimimo.com/v1"
     DEEPSEEK_MODEL: str = "mimo-v2-pro"
+    EMBEDDING_MODEL: str = "text-embedding-v1"
+    EMBEDDING_DIM: int = 1024
 
     # WeChat / WeChat Pay API v3
     WX_APP_ID: str = ""
     WX_APP_SECRET: str = ""
+    WX_WEB_APP_ID: str = ""
+    WX_WEB_APP_SECRET: str = ""
+    WX_MOBILE_APP_ID: str = ""
+    WX_MOBILE_APP_SECRET: str = ""
     WECHAT_PAY_MCH_ID: str = ""
     WECHAT_PAY_MCH_SERIAL_NO: str = ""
     WECHAT_PAY_PRIVATE_KEY_PATH: str = ""
@@ -39,6 +45,15 @@ class Settings(BaseSettings):
     SHARE_STORAGE_DIR: str = "data/share_images"
     SHARE_FONT_PATH: str = ""
     UPLOAD_STORAGE_DIR: str = "data/uploads"
+
+    # Mobile release and reminders
+    APP_LATEST_VERSION: str = "1.1.0"
+    APP_MIN_VERSION: str = "1.0.0"
+    APP_FORCE_UPDATE: bool = False
+    APP_UPDATE_URL: str = ""
+    DAILY_REMINDER_ENABLED: bool = True
+    DAILY_REMINDER_HOUR: int = 20
+    DAILY_REMINDER_INTERVAL_SEC: int = 1800
 
     # Quota
     FREE_MONTHLY_QUOTA: int = 3

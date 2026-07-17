@@ -41,3 +41,11 @@ image/
 secrets/
 backend/data/share_images/
 backend/data/uploads/
+
+# Local visual review artifacts
+/.tmp-home.txt
+/*-before.png
+/*-after.png
+/after-*.png
+/full-page-final.png
+/playwright-*.png

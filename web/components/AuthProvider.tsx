@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const user = await fetchAPI<User>("/auth/me");
       setState({ user, loading: false, logged: true });
+      void fetchAPI("/invite/retry-reward", { method: "POST" }).catch(() => undefined);
     } catch {
       clearToken();
       setState({ user: null, loading: false, logged: false });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert, TextInput, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MotiView } from "moti";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,6 +12,8 @@ import {
   LogOut,
   ChevronRight,
   Pencil,
+  ShieldCheck,
+  FileText,
 } from "lucide-react-native";
 import { useAuth } from "@/lib/auth-context";
 import { fetchAPI } from "@/lib/api";
@@ -31,7 +33,9 @@ export default function ProfileScreen() {
         body: JSON.stringify({ nickname: nickname.trim() }),
       });
       setEditing(false);
-    } catch {}
+    } catch {
+      Alert.alert("保存失败", "请检查网络后重试");
+    }
   }
 
   function handleLogout() {
@@ -54,6 +58,8 @@ export default function ProfileScreen() {
     { icon: Bell, label: "通知", color: "#6366f1", onPress: () => router.push("/notifications") },
     { icon: Gift, label: "邀请奖励", color: "#ec4899", onPress: () => router.push("/invite") },
     { icon: HelpCircle, label: "帮助与反馈", color: "#0d9488", onPress: () => router.push("/feedback") },
+    { icon: ShieldCheck, label: "隐私政策", color: "#64748b", onPress: () => Linking.openURL("https://probe.app/privacy") },
+    { icon: FileText, label: "用户协议", color: "#64748b", onPress: () => Linking.openURL("https://probe.app/terms") },
   ];
 
   return (

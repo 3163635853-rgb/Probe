@@ -6,6 +6,7 @@ import { useToast } from "@/components/Toast";
 import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PaginatedData } from "@/lib/types";
 
 interface Notification {
@@ -31,6 +32,7 @@ function NotificationsContent() {
   const [optimistic, setOptimistic] = useState<Set<number>>(new Set());
 
   const toast = useToast();
+  const router = useRouter();
 
   const items = data?.items || [];
 
@@ -86,7 +88,10 @@ function NotificationsContent() {
             {items.map((n) => (
               <div
                 key={n.id}
-                onClick={() => { if (!isRead(n)) markRead(n.id); }}
+                onClick={() => {
+                  if (!isRead(n)) void markRead(n.id);
+                  if (n.related_url && n.related_url.startsWith("/")) router.push(n.related_url);
+                }}
                 className={`rounded-lg border border-border p-4 cursor-pointer transition-colors ${isRead(n) ? "bg-card opacity-70" : "bg-card hover:bg-secondary"}`}
               >
                 <div className="flex items-start justify-between gap-3">

@@ -10,7 +10,7 @@ EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
 async def send_push(push_token: str, title: str, body: str, data: Optional[dict] = None):
     """发送推送通知到单个设备"""
-    if not push_token or not push_token.startswith("ExponentPushToken"):
+    if not push_token or not push_token.startswith(("ExponentPushToken", "ExpoPushToken")):
         return
 
     message = {

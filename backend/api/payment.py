@@ -318,6 +318,33 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
             await _fulfill_redis_entitlement(payment, db)
             payment.fulfilled_at = utcnow()
             await db.commit()
+
+        from services.notifications import create_notification, push_to_user
+        product_names = {"single": "单次面试", "monthly": "月度会员", "yearly": "年度会员"}
+        product_name = product_names.get(payment.product_type, payment.product_type)
+        title = "支付成功，权益已到账"
+        content = f"{product_name}已生效，可立即开始新的面试训练。"
+        related_url = f"/orders?order={payment.uuid}"
+        _, notification_created = await create_notification(
+            db,
+            user_id=payment.user_id,
+            title=title,
+            content=content,
+            type_name="payment",
+            related_url=related_url,
+        )
+        await db.commit()
+        if notification_created:
+            try:
+                await push_to_user(
+                    db,
+                    user_id=payment.user_id,
+                    title=title,
+                    content=content,
+                    related_url="/membership",
+                )
+            except Exception:
+                pass
     except Exception as exc:
         await db.rollback()
         logger.error("wechat_pay_fulfillment_failed", order_no=order_no, error=str(exc))

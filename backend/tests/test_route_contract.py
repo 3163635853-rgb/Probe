@@ -24,6 +24,7 @@ EXPECTED_ROUTES = {
     ("GET", "/api/subscription/current"), ("PUT", "/api/subscription/auto-renew"),
     ("POST", "/api/speech/transcribe"), ("GET", "/api/speech/tts"),
     ("GET", "/api/invite/my-code"), ("POST", "/api/invite/redeem"),
+    ("POST", "/api/invite/retry-reward"),
     ("GET", "/api/invite/records"), ("GET", "/api/notification/list"),
     ("GET", "/api/notification/unread-count"),
     ("PUT", "/api/notification/{notification_id}/read"),

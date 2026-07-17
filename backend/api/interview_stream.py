@@ -169,8 +169,9 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     plan_index = ctx_data.get("plan_index", 0)
     current_round = ctx_data.get("current_round", 0)
     recent_rounds = ctx_data.get("recent_rounds", [])
+    user_profile_text = ctx_data.get("user_profile", "")
 
-    # 获取行业/岗位名称
+    # 获取行业/岗位名称和跨面试能力画像
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(InterviewSession).where(InterviewSession.id == session_db_id))
         session_obj = result.scalar_one_or_none()
@@ -183,6 +184,15 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             if session_obj.position_id:
                 pos = await db.get(Position, session_obj.position_id)
                 position_name = pos.name if pos else ""
+        if not user_profile_text:
+            from memory.profile import load_user_profile
+            _, user_profile_text = await load_user_profile(db, user_id)
+            ctx_data["user_profile"] = user_profile_text
+            await redis_client.set(
+                f"agent_ctx:{session_uuid}",
+                json.dumps(ctx_data, ensure_ascii=False),
+                ex=SESSION_TTL,
+            )
 
     # PLANNING: 生成面试大纲
     if not plan_data:
@@ -196,6 +206,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                 mode_code=mode_code,
                 difficulty=difficulty,
                 jd_text=jd_text,
+                user_profile=user_profile_text,
             )
             plan_data = plan_result.get("outline", [])
             max_rounds = plan_result.get("total_rounds", 10)
@@ -209,6 +220,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     max_rounds = len(plan_data) if plan_data else 10
 
     # 主循环
+    terminate_after_probe = False
     for round_idx in range(plan_index, max_rounds):
         current_round = round_idx + 1
         plan_item = plan_data[round_idx] if round_idx < len(plan_data) else {}
@@ -299,37 +311,108 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             "evaluation": eval_result,
         })
 
-        # 追问决策
+        # 追问决策：最多两层，每次追问都评估、持久化并进入最终报告。
         await save_state(session_uuid, AgentState.DECIDING, current_round)
-        if not skipped and score < 8:
+        probe_depth = 0
+        probe_base_question = question_text
+        probe_base_answer = answer_text
+        probe_base_score = score
+        probe_base_evaluation = eval_result
+        while not skipped and probe_base_score < 8 and probe_depth < 2:
             try:
                 probe_result = await probe(
-                    question=question_text,
-                    answer=answer_text,
-                    score=score,
-                    evaluation=eval_result,
+                    question=probe_base_question,
+                    answer=probe_base_answer,
+                    score=probe_base_score,
+                    evaluation=probe_base_evaluation,
+                    probe_depth=probe_depth,
                 )
             except Exception as e:
                 logger.warning(f"Probe failed: {e}")
-                probe_result = {"should_probe": False}
+                break
 
-            if probe_result.get("should_probe"):
-                probe_q = probe_result.get("question", "")
-                if probe_q:
-                    seq += 1
-                    yield await _push_event(session_uuid, seq, "question", {
-                        "round": current_round,
-                        "content": probe_q,
-                        "type": "probe",
-                        "dimension": plan_item.get("dimension", "专业知识"),
-                    })
+            probe_q = str(probe_result.get("question") or "").strip()
+            if not probe_result.get("should_probe") or not probe_q:
+                break
+            probe_depth += 1
+            seq += 1
+            yield await _push_event(session_uuid, seq, "question", {
+                "round": current_round,
+                "content": probe_q,
+                "type": "probe",
+                "probe_depth": probe_depth,
+                "dimension": plan_item.get("dimension", "专业知识"),
+            })
 
-                    # 等追问的回答
-                    probe_answer = await _wait_for_answer(session_uuid)
-                    if probe_answer == "__END__":
-                        break
-                    if probe_answer != "__SKIP__":
-                        pass
+            probe_answer = await _wait_for_answer(session_uuid)
+            if probe_answer == "__REMINDER__":
+                seq += 1
+                yield await _push_event(session_uuid, seq, "reminder", {
+                    "message": "还在吗？可以先说出你的判断，再补充依据。"
+                })
+                probe_answer = await _wait_for_answer(session_uuid, timeout=600)
+            if probe_answer in ("__END__", "__REMINDER__"):
+                terminate_after_probe = True
+                break
+
+            probe_skipped = probe_answer == "__SKIP__"
+            probe_answer_text = "" if probe_skipped else probe_answer
+            try:
+                probe_evaluation = await evaluate(
+                    question=probe_q,
+                    answer=probe_answer_text,
+                    difficulty=difficulty,
+                )
+            except Exception as e:
+                logger.warning(f"Probe evaluation failed: {e}")
+                probe_evaluation = {
+                    "score": 5,
+                    "dimension": plan_item.get("dimension", "专业知识"),
+                    "strengths": [],
+                    "weaknesses": ["追问评估异常"],
+                    "suggestion": "",
+                }
+            probe_score = int(probe_evaluation.get("score", 0))
+            seq += 1
+            yield await _push_event(session_uuid, seq, "evaluation", {
+                "round": current_round,
+                "score": probe_score,
+                "brief": probe_evaluation.get("suggestion", ""),
+                "visible": False,
+                "type": "probe",
+                "probe_depth": probe_depth,
+            })
+
+            async with AsyncSessionLocal() as db:
+                db.add(InterviewRound(
+                    session_id=session_db_id,
+                    round_num=current_round,
+                    question_type="probe",
+                    probe_depth=probe_depth,
+                    question=probe_q,
+                    answer=probe_answer_text if not probe_skipped else None,
+                    skipped=probe_skipped,
+                    evaluation=probe_evaluation,
+                    score=probe_score,
+                    question_source="ai",
+                ))
+                await db.commit()
+
+            recent_rounds.append({
+                "round_num": current_round,
+                "question": probe_q,
+                "answer": probe_answer_text,
+                "score": probe_score,
+                "evaluation": probe_evaluation,
+                "question_type": "probe",
+                "probe_depth": probe_depth,
+            })
+            if probe_skipped:
+                break
+            probe_base_question = probe_q
+            probe_base_answer = probe_answer_text
+            probe_base_score = probe_score
+            probe_base_evaluation = probe_evaluation
 
         # 保存上下文
         ctx_data["plan"] = plan_data
@@ -337,6 +420,9 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         ctx_data["current_round"] = current_round
         ctx_data["recent_rounds"] = recent_rounds[-3:]
         await redis_client.set(f"agent_ctx:{session_uuid}", json.dumps(ctx_data, ensure_ascii=False), ex=SESSION_TTL)
+
+        if terminate_after_probe:
+            break
 
         # Status update
         seq += 1
@@ -390,7 +476,8 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             "next_focus": [],
         }
 
-    # 写入 DB
+    # 写入报告，并在同一业务阶段更新长期画像、成就和站内通知。
+    push_messages: list[tuple[str, str, str]] = []
     async with AsyncSessionLocal() as db:
         sess = await db.get(InterviewSession, session_db_id)
         if sess:
@@ -400,27 +487,54 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             sess.ended_at = datetime.now(timezone.utc)
             if sess.started_at:
                 sess.duration_sec = int((sess.ended_at - sess.started_at).total_seconds())
+            await db.flush()
+
+            from api.achievement import check_and_grant_achievements
+            from memory.profile import refresh_user_profile
+            from services.notifications import create_notification
+
+            await refresh_user_profile(db, user_id)
+            new_achievements = await check_and_grant_achievements(user_id, db)
+            score = int(report_data.get("overall_score", 0))
+            report_title = "面试报告已生成"
+            report_content = f"本次得分 {score} 分，点击查看逐题反馈和下一步训练重点。"
+            _, report_created = await create_notification(
+                db,
+                user_id=user_id,
+                title=report_title,
+                content=report_content,
+                type_name="report",
+                related_url=f"/interview/{session_uuid}/report",
+            )
+            if report_created:
+                push_messages.append((report_title, report_content, f"/interview/{session_uuid}/report"))
+
+            for achievement_name in new_achievements:
+                title = f"解锁成就：{achievement_name}"
+                content = "新的训练里程碑已经点亮，去成就中心查看。"
+                _, achievement_created = await create_notification(
+                    db,
+                    user_id=user_id,
+                    title=title,
+                    content=content,
+                    type_name="achievement",
+                    related_url="/achievements",
+                )
+                if achievement_created:
+                    push_messages.append((title, content, "/achievements"))
             await db.commit()
+
+        from services.notifications import push_to_user
+        for title, content, related_url in push_messages:
+            try:
+                await push_to_user(
+                    db, user_id=user_id, title=title, content=content, related_url=related_url
+                )
+            except Exception as exc:
+                logger.warning(f"Notification push failed: {exc}")
 
     # 清理 Redis
     await redis_client.delete(f"active_session:{user_id}")
-
-    # 推送通知（App 端）
-    try:
-        async with AsyncSessionLocal() as db:
-            from models.user import User
-            user_obj = await db.get(User, user_id)
-            if user_obj and user_obj.push_token:
-                from services.push import send_push
-                score = report_data.get("overall_score", 0)
-                await send_push(
-                    user_obj.push_token,
-                    title="面试报告已生成",
-                    body=f"本次得分 {score} 分，点击查看详情",
-                    data={"screen": "report", "session_uuid": session_uuid},
-                )
-    except Exception:
-        pass  # 推送失败不影响主流程
 
     seq += 1
     yield await _push_event(session_uuid, seq, "report", {
@@ -437,8 +551,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
 async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, jd_text: str, recent_rounds: list, session_uuid: str = "", industry_id: int | None = None, position_id: int | None = None) -> tuple[str, str]:
     """根据计划项生成面试题。返回 (question_text, source)"""
     from services.llm import chat, CHAT_PARAMS
-    from knowledge.retriever import retriever
-    from knowledge.embedder import embed
+    from knowledge.service import retrieve_question
     from memory.working import get_asked_ids
 
     topic = plan_item.get("topic", "通用技术")
@@ -449,21 +562,19 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
     source = "ai"
     try:
         asked_ids = await get_asked_ids(session_uuid) if session_uuid else set()
-        if retriever.index and retriever.index.ntotal > 0:
-            query_text = f"{topic} {q_type} {dim}"
-            query_vec = await embed(query_text)
-            results = retriever.search(
-                query_vector=query_vec,
-                top_k=1,
-                industry_id=industry_id,
-                position_id=position_id,
-                difficulty=difficulty,
-                exclude_ids=asked_ids,
-            )
-            if results:
-                from memory.working import mark_asked
-                await mark_asked(session_uuid, results[0].id)
-                return results[0].question, "knowledge_base"
+        query_text = f"{topic} {q_type} {dim}"
+        results = await retrieve_question(
+            query_text=query_text,
+            top_k=1,
+            industry_id=industry_id,
+            position_id=position_id,
+            difficulty=difficulty,
+            exclude_ids=asked_ids,
+        )
+        if results:
+            from memory.working import mark_asked
+            await mark_asked(session_uuid, results[0].id)
+            return results[0].question, "knowledge_base"
     except Exception as e:
         logger.debug(f"Knowledge retrieval failed, falling back to AI: {e}")
 

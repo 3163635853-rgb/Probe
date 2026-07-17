@@ -1,6 +1,6 @@
 # Probe Mobile
 
-Expo SDK 52 + React Native + TypeScript 移动端。
+Expo SDK 56 + React Native + TypeScript 移动端。
 
 ## 快速开始
 
@@ -52,3 +52,13 @@ npx eas build --profile production # 正式包
 ## 成长中心（1.1.0）
 
 新增等级 XP、连续训练、每周目标、七日训练脉冲、薄弱能力聚焦和每日任务。UI 仅使用 lucide-react-native、Moti、SVG 和原生 View 动效。
+
+## 发布环境变量
+
+```env
+EXPO_PUBLIC_EAS_PROJECT_ID=...
+EXPO_PUBLIC_WECHAT_APP_ID=...
+EXPO_PUBLIC_WECHAT_CALLBACK_URL=https://probe.app/auth/wechat/callback
+```
+
+未配置 EAS Project ID 时 App 会跳过 Push Token 注册，不影响邮箱登录和面试功能。

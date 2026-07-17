@@ -537,7 +537,7 @@ Phase 1 数据量小（几百题 + 少量用户记忆），用 FAISS 本地文�
 ### interview_knowledge — 题库向量
 
 ```
-维度: 1024d (BGE-M3)
+维度: 默认 1024d（由 EMBEDDING_DIM 配置，以实际模型返回为准）
 metric: cosine
 metadata (JSON sidecar per vector):
   mysql_id       → knowledge_questions.id
@@ -553,7 +553,7 @@ Phase 2+ 迁移: Milvus IVF_FLAT, nlist=128, 按 industry 分区
 ### interview_memory — 用户记忆向量
 
 ```
-维度: 1024d (BGE-M3)
+维度: 默认 1024d（由 EMBEDDING_DIM 配置，以实际模型返回为准）
 metric: cosine
 metadata:
   user_id        → 必选过滤

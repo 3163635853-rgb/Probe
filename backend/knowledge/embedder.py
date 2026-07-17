@@ -7,8 +7,8 @@ _client = AsyncOpenAI(
     base_url=settings.DEEPSEEK_BASE_URL,
 )
 
-EMBEDDING_MODEL = "text-embedding-v1"  # 根据实际可用模型调整
-EMBEDDING_DIM = 1024
+EMBEDDING_MODEL = settings.EMBEDDING_MODEL
+EMBEDDING_DIM = settings.EMBEDDING_DIM
 
 
 async def embed(text: str) -> list[float]:

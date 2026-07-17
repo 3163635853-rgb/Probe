@@ -4,7 +4,7 @@
 >
 > 分支：`main`
 >
-> 规模：51 个 API/健康路由、21 张业务表、Web + Expo App 双端
+> 规模：52 个 API/健康路由、21 张业务表、Web + Expo App 双端
 
 ![Probe AI 面试官全链路](../assets/probe-end-to-end-chain.png)
 
@@ -16,7 +16,7 @@
 |---|---|---|
 | Backend compile | PASS | 全部 Python 文件可编译，FastAPI 可导入 |
 | Backend tests | PASS | 20 个测试通过 |
-| API contract | PASS | 51 条路由的方法与路径完整匹配 |
+| API contract | PASS | 52 条路由的方法与路径完整匹配 |
 | ORM metadata | PASS | 21 张业务表全部注册 |
 | Alembic | PASS | Head 为 `7c2d9b4f8a11`，完整 MySQL 离线 SQL 可生成 |
 | Python audit | PASS | `pip-audit` 无已知漏洞 |
@@ -63,7 +63,7 @@ flowchart LR
     AGENT --> P4[Reporter]
 
     AGENT --> LLM[MiMo / OpenAI Compatible]
-    AGENT --> K[FAISS 题库检索]
+    AGENT --> K[FAISS 优先 / MySQL 题库兜底]
     A --> MYSQL[(MySQL)]
     A --> REDIS[(Redis)]
     K --> MYSQL
@@ -212,7 +212,7 @@ Reporter 生成：
 - `GET /api/interview/history`
 - `GET /api/interview/stats`
 
-展示报告、历史和趋势图。完成面试后成就模块可读取并展示已达成状态。
+展示报告、历史和趋势图。完成面试后会自动刷新跨面试画像、检查并发放成就，同时生成站内通知和 Push。
 
 ## 10. 成长中心链路
 
@@ -368,7 +368,7 @@ Web 在服务端图片生成失败时保留 html2canvas 降级路径。
 | User device | 1 | `/api/user/push-token` |
 | Growth | 3 | `/api/growth/*` |
 | Health | 1 | `/health` |
-| **合计** | **51** | |
+| **合计** | **52** | |
 
 ## 17. CI/CD 链路
 

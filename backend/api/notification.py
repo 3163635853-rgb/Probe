@@ -5,6 +5,7 @@ from sqlalchemy import select, desc, update, func
 from db.mysql import get_db
 from models.notification import Notification
 from api.deps import get_current_user
+from services.notifications import push_data_for_url
 
 router = APIRouter(prefix="/api/notification", tags=["notification"])
 
@@ -47,6 +48,7 @@ async def list_notifications(
                     "type": n.type,
                     "is_read": n.is_read,
                     "related_url": n.related_url,
+                    "data": push_data_for_url(n.related_url),
                     "created_at": n.created_at.isoformat(),
                 }
                 for n in notifications
