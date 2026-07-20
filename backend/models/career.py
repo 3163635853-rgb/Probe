@@ -57,6 +57,26 @@ class PracticeAttempt(Base, TimestampMixin):
     comparison: Mapped[Optional[dict]] = mapped_column(JSON)
 
 
+class DrillAttempt(Base, FullTimestampMixin):
+    __tablename__ = "drill_attempts"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    uuid: Mapped[str] = mapped_column(String(36), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
+    drill_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False)
+    duration_sec: Mapped[Optional[int]] = mapped_column(Integer)
+    position: Mapped[Optional[str]] = mapped_column(String(128))
+    company_name: Mapped[Optional[str]] = mapped_column(String(128))
+    focus: Mapped[Optional[str]] = mapped_column(String(128))
+    evaluation: Mapped[Optional[dict]] = mapped_column(JSON)
+    optimized_answers: Mapped[Optional[dict]] = mapped_column(JSON)
+    comparison: Mapped[Optional[dict]] = mapped_column(JSON)
+    xp_awarded: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
 class VideoAnalysis(Base, FullTimestampMixin):
     __tablename__ = "video_analyses"
 
@@ -83,9 +103,12 @@ class CoachReview(Base, FullTimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
     coach_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("users.id"))
     session_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("interview_sessions.id"), nullable=False)
+    video_analysis_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("video_analyses.id"))
     status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False)
     focus: Mapped[Optional[str]] = mapped_column(Text)
     rating: Mapped[Optional[int]] = mapped_column(Integer)
     comments: Mapped[Optional[str]] = mapped_column(Text)
     annotations: Mapped[Optional[list]] = mapped_column(JSON)
+    consent_granted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    media_access_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)

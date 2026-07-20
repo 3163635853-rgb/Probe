@@ -14,6 +14,7 @@ from db.redis import redis_client
 from models.user import User
 from models.interview import InterviewSession, InterviewRound
 from models.config import Industry, Position
+from models.organization import OrganizationQuestion, ScoringRubric
 from agent.core import (
     AgentState, save_state, load_context, save_context, SESSION_TTL,
 )
@@ -176,6 +177,9 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     interviewer_role = ctx_data.get("interviewer_role", "")
     training_focus = ctx_data.get("training_focus", "")
     rubric_context = ctx_data.get("rubric_context", "")
+    organization_id = ctx_data.get("organization_id")
+    rubric_id = ctx_data.get("rubric_id")
+    pass_score = ctx_data.get("pass_score")
 
     # 获取行业/岗位名称和跨面试能力画像
     async with AsyncSessionLocal() as db:
@@ -245,7 +249,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
         # 出题
         await save_state(session_uuid, AgentState.QUESTIONING, current_round)
 
-        question_text, q_source, knowledge_question_id, reference_answer, scoring_criteria = await _generate_question(
+        question_text, q_source, knowledge_question_id, organization_question_id, reference_answer, scoring_criteria = await _generate_question(
             plan_item, mode_code, difficulty, jd_text, recent_rounds,
             session_uuid=session_uuid,
             industry_id=ctx_data.get("industry_id") if ctx_data else None,
@@ -254,6 +258,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             interview_stage=interview_stage,
             interviewer_role=interviewer_role,
             training_focus=training_focus,
+            organization_id=organization_id,
         )
 
         seq += 1
@@ -318,6 +323,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                 score=score,
                 question_source=q_source,
                 knowledge_question_id=knowledge_question_id,
+                organization_question_id=organization_question_id,
             )
             db.add(ir)
             # 更新 session total_rounds
@@ -387,6 +393,7 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
                     answer=probe_answer_text,
                     difficulty=difficulty,
                     scoring_criteria=f"自定义评分标准：{rubric_context}" if rubric_context else "",
+                    candidate_evidence=resume_context,
                 )
             except Exception as e:
                 logger.warning(f"Probe evaluation failed: {e}")
@@ -501,6 +508,15 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
             "next_focus": [],
         }
 
+    if rubric_id:
+        async with AsyncSessionLocal() as db:
+            rubric = await db.get(ScoringRubric, int(rubric_id))
+            if rubric:
+                resolved_pass_score = int(pass_score or rubric.pass_score)
+                overall = int(report_data.get("overall_score", 0))
+                report_data["rubric"] = {"uuid": rubric.uuid, "name": rubric.name, "pass_score": resolved_pass_score}
+                report_data["passed"] = overall >= resolved_pass_score
+
     # 写入报告，并在同一业务阶段更新长期画像、成就和站内通知。
     push_messages: list[tuple[str, str, str]] = []
     async with AsyncSessionLocal() as db:
@@ -573,8 +589,8 @@ async def _run_agent_loop(session_uuid: str, user_id: int, session_db_id: int, s
     yield await _push_event(session_uuid, seq, "done", {})
 
 
-async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, jd_text: str, recent_rounds: list, session_uuid: str = "", industry_id: int | None = None, position_id: int | None = None, company_name: str = "", interview_stage: str = "", interviewer_role: str = "", training_focus: str = "") -> tuple[str, str, int | None, str, str]:
-    """返回题目、来源、题库 ID、参考答案和评分标准。"""
+async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, jd_text: str, recent_rounds: list, session_uuid: str = "", industry_id: int | None = None, position_id: int | None = None, company_name: str = "", interview_stage: str = "", interviewer_role: str = "", training_focus: str = "", organization_id: int | None = None) -> tuple[str, str, int | None, int | None, str, str]:
+    """返回题目、来源、知识题 ID、组织题 ID、参考答案和评分标准。"""
     from services.llm import chat, CHAT_PARAMS
     from knowledge.service import retrieve_question
     from memory.working import get_asked_ids
@@ -583,7 +599,34 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
     q_type = plan_item.get("type", "tech")
     dim = plan_item.get("dimension", "专业知识")
 
-    # 先尝试从题库检索
+    # 组织训练优先使用组织自定义题库，并为本场去重。
+    if organization_id:
+        try:
+            asked_key = f"org_question_asked:{session_uuid}"
+            asked_raw = await redis_client.smembers(asked_key) if session_uuid else set()
+            asked = {int(item) for item in asked_raw}
+            async with AsyncSessionLocal() as db:
+                org_result = await db.execute(
+                    select(OrganizationQuestion)
+                    .where(
+                        OrganizationQuestion.organization_id == int(organization_id),
+                        OrganizationQuestion.is_active.is_(True),
+                        OrganizationQuestion.difficulty <= difficulty,
+                    )
+                    .order_by(OrganizationQuestion.difficulty.desc(), OrganizationQuestion.id)
+                    .limit(50)
+                )
+                candidates = list(org_result.scalars().all())
+            selected_org = next((item for item in candidates if item.id not in asked), None)
+            if selected_org:
+                if session_uuid:
+                    await redis_client.sadd(asked_key, selected_org.id)
+                    await redis_client.expire(asked_key, SESSION_TTL)
+                return selected_org.question, "organization", None, selected_org.id, "", selected_org.scoring_criteria or ""
+        except Exception as e:
+            logger.debug(f"Organization question retrieval failed: {e}")
+
+    # 再尝试从公共题库检索
     source = "ai"
     try:
         asked_ids = await get_asked_ids(session_uuid) if session_uuid else set()
@@ -604,6 +647,7 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
                 selected.question,
                 "knowledge_base",
                 selected.id,
+                None,
                 selected.reference_answer,
                 selected.scoring_criteria,
             )
@@ -635,10 +679,10 @@ async def _generate_question(plan_item: dict, mode_code: str, difficulty: int, j
 
     messages = [{"role": "user", "content": prompt}]
     try:
-        return await chat(messages, CHAT_PARAMS), source, None, "", ""
+        return await chat(messages, CHAT_PARAMS), source, None, None, "", ""
     except Exception as e:
         logger.warning(f"Question generation failed: {e}")
-        return "请介绍一下你最近做的一个项目，你在其中承担了什么角色？", "ai", None, "", ""
+        return "请介绍一下你最近做的一个项目，你在其中承担了什么角色？", "ai", None, None, "", ""
 
 
 async def _wait_for_answer(session_uuid: str, timeout: int = 900):

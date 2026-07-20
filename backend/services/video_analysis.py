@@ -2,7 +2,13 @@
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
+import tempfile
+import wave
 from pathlib import Path
+
+import numpy as np
 
 FILLERS = ["嗯", "呃", "然后", "就是", "那个", "其实", "基本上", "然后呢", "you know", "um", "uh"]
 
@@ -102,3 +108,62 @@ def analyze_video_frames(path: Path) -> dict:
         "visual_score": score,
         "note": "目光指标基于眼部可见和面部居中比例，仅用于训练参考",
     }
+
+
+def analyze_audio_track(path: Path) -> dict:
+    """Use ffmpeg to extract mono PCM and derive explainable volume/silence metrics."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return {"audio_metrics_available": False, "audio_metrics_reason": "ffmpeg unavailable"}
+    with tempfile.TemporaryDirectory(prefix="probe-audio-") as temp_dir:
+        wav_path = Path(temp_dir) / "audio.wav"
+        try:
+            subprocess.run(
+                [ffmpeg, "-y", "-i", str(path), "-vn", "-ac", "1", "-ar", "16000", "-acodec", "pcm_s16le", str(wav_path)],
+                check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=90,
+            )
+            with wave.open(str(wav_path), "rb") as source:
+                sample_rate = source.getframerate()
+                frames = source.readframes(source.getnframes())
+            samples = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+            if samples.size == 0:
+                return {"audio_metrics_available": False, "audio_metrics_reason": "empty audio track"}
+            window = max(1, sample_rate // 10)
+            usable = samples[: samples.size - (samples.size % window)]
+            if usable.size == 0:
+                usable = samples
+                window = samples.size
+            chunks = usable.reshape(-1, window)
+            rms = np.sqrt(np.mean(np.square(chunks), axis=1))
+            nonzero = rms[rms > 0]
+            baseline = float(np.median(nonzero)) if nonzero.size else 0.0
+            threshold = max(0.008, baseline * 0.22)
+            silent = rms < threshold
+            first_voice = next((index for index, is_silent in enumerate(silent) if not is_silent), len(silent))
+            opening_silence = round(first_voice * 0.1, 1)
+            pause_count = 0
+            run = 0
+            for is_silent in silent:
+                if is_silent:
+                    run += 1
+                else:
+                    if run >= 4:
+                        pause_count += 1
+                    run = 0
+            if run >= 4:
+                pause_count += 1
+            voiced = rms[~silent]
+            if voiced.size > 1 and float(np.mean(voiced)) > 0:
+                coefficient = float(np.std(voiced) / np.mean(voiced))
+                stability = round(max(0.0, min(100.0, 100 - coefficient * 100)), 1)
+            else:
+                stability = 0.0
+            return {
+                "audio_metrics_available": True,
+                "opening_silence_sec": opening_silence,
+                "audio_pause_count": pause_count,
+                "volume_stability": stability,
+                "silence_ratio": round(float(np.mean(silent)) * 100, 1),
+            }
+        except (OSError, subprocess.SubprocessError, wave.Error, ValueError) as exc:
+            return {"audio_metrics_available": False, "audio_metrics_reason": str(exc)[:160]}

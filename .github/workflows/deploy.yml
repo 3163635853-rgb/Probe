@@ -21,6 +21,8 @@ jobs:
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Deployment skipped because SERVER_IP, SERVER_USER, or SSH_KEY is not configured."
+            echo "## Deployment skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "SERVER_IP, SERVER_USER, and SSH_KEY must be configured before production deployment can run." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Deploy to server

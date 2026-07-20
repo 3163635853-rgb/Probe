@@ -65,4 +65,4 @@ async def test_generated_knowledge_question_returns_rubric(monkeypatch):
         {"topic": "架构", "type": "tech", "dimension": "专业知识"},
         "technical", 3, "", [], session_uuid="session", industry_id=1, position_id=2,
     )
-    assert result == ("题库问题", "knowledge_base", 7, "参考答案", "评分标准")
+    assert result == ("题库问题", "knowledge_base", 7, None, "参考答案", "评分标准")

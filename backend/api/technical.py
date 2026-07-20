@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.deps import get_current_user
 from db.mysql import get_db
 from models.interview import InterviewSession
-from models.organization import ScoringRubric, TechnicalSubmission
+from models.organization import OrganizationMember, ScoringRubric, TechnicalSubmission
 from services.technical import analyze_python_code, analyze_whiteboard, enhance_technical_feedback, execute_readonly_sql
 
 router = APIRouter(prefix="/api/technical", tags=["technical"])
@@ -51,7 +51,17 @@ async def evaluate_submission(req: TechnicalRequest, auth: tuple = Depends(get_c
     if req.rubric_uuid:
         rubric_result = await db.execute(select(ScoringRubric).where(ScoringRubric.uuid == req.rubric_uuid, ScoringRubric.is_active.is_(True)))
         rubric = rubric_result.scalar_one_or_none()
-        if not rubric or (not rubric.is_public and rubric.created_by != user.id):
+        if not rubric:
+            raise HTTPException(status_code=403, detail={"code": 40370, "message": "评分标准不可用"})
+        allowed = rubric.is_public or rubric.created_by == user.id
+        if rubric.organization_id and not allowed:
+            member_result = await db.execute(select(OrganizationMember.id).where(
+                OrganizationMember.organization_id == rubric.organization_id,
+                OrganizationMember.user_id == user.id,
+                OrganizationMember.status == "active",
+            ))
+            allowed = member_result.scalar_one_or_none() is not None
+        if not allowed:
             raise HTTPException(status_code=403, detail={"code": 40370, "message": "评分标准不可用"})
         rubric_id, rubric_dimensions = rubric.id, rubric.dimensions
     if req.kind == "sql":

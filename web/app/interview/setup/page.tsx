@@ -22,6 +22,7 @@ const STEPS: Step[] = ["industry", "position", "mode", "difficulty", "jd", "conf
 interface ResumeOption { uuid: string; name: string; is_active: boolean; }
 interface CareerPresets { stages: { code: string; name: string; focus: string }[]; interviewer_roles: string[]; }
 interface RubricOption { uuid: string; name: string; }
+interface OrganizationOption { uuid: string; name: string; role: string; }
 
 export default function SetupPage() {
   return (
@@ -54,24 +55,27 @@ function SetupFlow() {
   const [resumes, setResumes] = useState<ResumeOption[]>([]);
   const [careerPresets, setCareerPresets] = useState<CareerPresets>({ stages: [], interviewer_roles: [] });
   const [rubrics, setRubrics] = useState<RubricOption[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
   const [resumeUuid, setResumeUuid] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [interviewStage, setInterviewStage] = useState("");
   const [interviewerRole, setInterviewerRole] = useState("");
   const [trainingFocus, setTrainingFocus] = useState("");
   const [rubricUuid, setRubricUuid] = useState("");
+  const [organizationUuid, setOrganizationUuid] = useState("");
 
   // 初始化：加载行业 + 配额 + 检查活跃面试
   useEffect(() => {
     async function init() {
       try {
-        const [industriesData, quotaData, active, resumeData, presetData, rubricData] = await Promise.all([
+        const [industriesData, quotaData, active, resumeData, presetData, rubricData, organizationData] = await Promise.all([
           fetchAPI<Industry[]>("/config/industries"),
           fetchAPI<QuotaStatus>("/quota/status"),
           fetchAPI<ActiveInterview | null>("/interview/active"),
           fetchAPI<ResumeOption[]>("/career/resumes"),
           fetchAPI<CareerPresets>("/career/presets"),
           fetchAPI<RubricOption[]>("/enterprise/rubrics"),
+          fetchAPI<OrganizationOption[]>("/enterprise/organizations"),
         ]);
         setIndustries(industriesData);
         setQuota(quotaData);
@@ -79,6 +83,7 @@ function SetupFlow() {
         setResumes(resumeData);
         setCareerPresets(presetData);
         setRubrics(rubricData);
+        setOrganizations(organizationData);
         setResumeUuid(resumeData.find((item) => item.is_active)?.uuid || "");
       } catch {
         toast.error("加载配置失败，请刷新重试");
@@ -86,6 +91,17 @@ function SetupFlow() {
     }
     init();
   }, [toast]);
+
+  async function selectOrganization(uuid: string) {
+    setOrganizationUuid(uuid);
+    setRubricUuid("");
+    try {
+      const data = await fetchAPI<RubricOption[]>(uuid ? `/enterprise/rubrics?organization_uuid=${uuid}` : "/enterprise/rubrics");
+      setRubrics(data);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "加载组织评分标准失败"));
+    }
+  }
 
   // 选行业后加载岗位
   async function selectIndustry(ind: Industry) {
@@ -152,6 +168,7 @@ function SetupFlow() {
           interviewer_role: interviewerRole || undefined,
           training_focus: trainingFocus || undefined,
           rubric_uuid: rubricUuid || undefined,
+          organization_uuid: organizationUuid || undefined,
         }),
       });
       router.push(`/interview/${data.session_uuid}`);
@@ -312,6 +329,9 @@ function SetupFlow() {
                 <option value="">选择面试官角色</option>{careerPresets.interviewer_roles.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
               <input value={trainingFocus} onChange={(e) => setTrainingFocus(e.target.value)} placeholder="专项重点，例如：量化成果" className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm" />
+              <select value={organizationUuid} onChange={(e) => void selectOrganization(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
+                <option value="">个人训练</option>{organizations.map((item) => <option key={item.uuid} value={item.uuid}>{item.name} · {item.role}</option>)}
+              </select>
               <select value={rubricUuid} onChange={(e) => setRubricUuid(e.target.value)} className="rounded-lg border border-input bg-card px-3 py-2.5 text-sm">
                 <option value="">默认评分标准</option>{rubrics.map((item) => <option key={item.uuid} value={item.uuid}>{item.name}</option>)}
               </select>

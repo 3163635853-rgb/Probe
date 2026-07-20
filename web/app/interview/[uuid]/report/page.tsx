@@ -7,6 +7,7 @@ import { CheckCircle, TrendingUp, Lightbulb, XCircle, Brain, Download } from "lu
 import { AuthGuard } from "@/components/AuthGuard";
 import { useFetch } from "@/lib/hooks";
 import { fetchAPI } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { useToast } from "@/components/Toast";
 import type { InterviewReport } from "@/lib/types";
 import { RetryRound } from "@/components/RetryRound";
@@ -58,6 +59,12 @@ function ReportContent() {
     score,
     fullMark: 10,
   }));
+  const expressionMediaUrl = report.expression_analysis ? (() => {
+    const token = getToken();
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "/api";
+    const origin = apiBase.startsWith("http") ? new URL(apiBase).origin : "";
+    return `${origin}${report.expression_analysis.media_url}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+  })() : "";
 
   return (
     <main className="flex-1 overflow-y-auto">
@@ -80,6 +87,17 @@ function ReportContent() {
             {report.overall_score >= 70 ? "表现优秀" : "待提升"}
           </span>
         </div>
+
+        {(report.expression_score != null || report.rubric) && (
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-border bg-card p-4 text-center"><p className="text-3xl font-bold">{report.content_score ?? report.overall_score}</p><p className="mt-1 text-xs text-muted-foreground">内容能力</p></div>
+            <div className="rounded-xl border border-border bg-card p-4 text-center"><p className="text-3xl font-bold">{report.expression_score ?? "—"}</p><p className="mt-1 text-xs text-muted-foreground">表达表现</p></div>
+            <div className="rounded-xl border border-border bg-card p-4 text-center"><p className="text-3xl font-bold text-primary">{report.combined_score ?? report.overall_score}</p><p className="mt-1 text-xs text-muted-foreground">综合表现</p></div>
+            {report.rubric && <div className={`rounded-xl border p-4 text-center sm:col-span-3 ${report.passed ? "border-success/30 bg-success/5" : "border-primary/30 bg-primary/5"}`}><p className="font-semibold">{report.rubric.name} · 合格线 {report.rubric.pass_score}</p><p className={`mt-1 text-sm ${report.passed ? "text-success" : "text-primary"}`}>{report.passed ? "已通过" : "未达到合格线"}</p></div>}
+          </div>
+        )}
+
+        {report.expression_analysis && <details className="rounded-xl border border-border bg-card p-4"><summary className="cursor-pointer text-sm font-semibold">回看本次表达录像与指标</summary><div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr]"><video src={expressionMediaUrl} controls className="aspect-video w-full rounded-xl bg-black object-contain" /><div className="grid grid-cols-2 gap-2"><MetricMini label="语速" value={`${report.expression_analysis.delivery_metrics.words_per_minute ?? 0} 字/分`} /><MetricMini label="填充词" value={`${report.expression_analysis.delivery_metrics.filler_count ?? 0} 次`} /><MetricMini label="长句" value={`${report.expression_analysis.delivery_metrics.long_sentence_count ?? 0} 句`} /><MetricMini label="真实停顿" value={`${report.expression_analysis.delivery_metrics.audio_pause_count ?? report.expression_analysis.delivery_metrics.pause_estimate ?? 0} 次`} /><MetricMini label="开场沉默" value={`${report.expression_analysis.delivery_metrics.opening_silence_sec ?? 0} 秒`} /><MetricMini label="音量稳定" value={`${report.expression_analysis.delivery_metrics.volume_stability ?? 0}/100`} /></div></div></details>}
 
         {/* Tab 切换 */}
         <div className="flex rounded-lg bg-secondary p-1">
@@ -226,6 +244,13 @@ function ReportContent() {
                   {r.evaluation?.structure && (
                     <p className="mt-2 text-xs text-muted-foreground">回答结构：{r.evaluation.structure.framework} · {r.evaluation.structure.complete ? "完整" : `缺少 ${r.evaluation.structure.missing.join("、") || "关键环节"}`}</p>
                   )}
+                  {r.evaluation?.consistency && r.evaluation.consistency.status !== "not_checked" && (
+                    <div className={`mt-2 rounded-lg px-3 py-2 text-xs ${r.evaluation.consistency.status === "potential_conflict" ? "bg-destructive/5 text-destructive" : r.evaluation.consistency.status === "unverified" ? "bg-primary/5 text-primary" : "bg-success/5 text-success"}`}>
+                      证据一致性：{r.evaluation.consistency.status === "consistent" ? "与简历/故事一致" : r.evaluation.consistency.status === "potential_conflict" ? "发现潜在冲突" : "存在待核实事实"}
+                      {r.evaluation.consistency.matched_story ? ` · 匹配故事：${r.evaluation.consistency.matched_story}` : ""}
+                      {r.evaluation.consistency.issues.length ? ` · ${r.evaluation.consistency.issues.join("；")}` : ""}
+                    </div>
+                  )}
                 </div>
                 <RetryRound round={r} />
               </div>
@@ -297,4 +322,8 @@ function ReportContent() {
       </div>
     </main>
   );
+}
+
+function MetricMini({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-lg bg-secondary p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>;
 }

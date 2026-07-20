@@ -121,6 +121,7 @@ export interface RoundDetail {
     suggestion: string;
     evidence?: Array<{ type: "strength" | "weakness"; quote: string; reason: string }>;
     structure?: { framework: string; complete: boolean; missing: string[] };
+    consistency?: { status: "consistent" | "potential_conflict" | "unverified" | "not_checked"; matched_story: string; issues: string[] };
   };
 }
 
@@ -133,6 +134,19 @@ export interface InterviewReport {
   duration_sec: number;
   total_rounds: number;
   overall_score: number;
+  content_score?: number;
+  expression_score?: number | null;
+  combined_score?: number;
+  expression_analysis?: {
+    uuid: string;
+    duration_sec?: number;
+    delivery_metrics: Record<string, number | string | Record<string, number>>;
+    visual_metrics: Record<string, number | string | boolean>;
+    overall_score: number;
+    media_url: string;
+  } | null;
+  rubric?: { uuid: string; name: string; pass_score: number };
+  passed?: boolean;
   dimensions: Record<string, number>;
   summary: string;
   strengths: string[];

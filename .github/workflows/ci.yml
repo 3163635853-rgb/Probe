@@ -118,6 +118,16 @@ jobs:
         working-directory: mobile
         run: npm run bundle:check
 
+  backend-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build backend production image
+        run: docker build -t probe-backend-ci ./backend
+      - name: Verify media and OCR tools
+        run: |
+          docker run --rm probe-backend-ci sh -lc 'command -v ffmpeg && command -v tesseract && command -v antiword'
+
   compose-config:
     runs-on: ubuntu-latest
     steps:

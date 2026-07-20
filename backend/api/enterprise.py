@@ -4,13 +4,14 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, func, select
+from sqlalchemy import delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user
 from db.mysql import get_db
-from models.interview import InterviewSession
-from models.organization import Organization, OrganizationAuditLog, OrganizationMember, OrganizationQuestion, ScoringRubric
+from models.interview import InterviewRound, InterviewSession
+from models.career import CoachReview, PracticeAttempt, VideoAnalysis
+from models.organization import Organization, OrganizationAuditLog, OrganizationMember, OrganizationQuestion, ScoringRubric, TechnicalSubmission
 from models.user import User
 
 router = APIRouter(prefix="/api/enterprise", tags=["enterprise"])
@@ -56,12 +57,25 @@ class QuestionRequest(BaseModel):
     scoring_criteria: str = Field("", max_length=5000)
 
 
+class RetentionRunRequest(BaseModel):
+    confirm: str
+
+
 def serialize_org(item: Organization, role: str) -> dict:
     return {"uuid": item.uuid, "name": item.name, "slug": item.slug, "role": role, "settings": item.settings or {}, "created_at": item.created_at.isoformat()}
 
 
 def serialize_rubric(item: ScoringRubric) -> dict:
     return {"uuid": item.uuid, "name": item.name, "description": item.description or "", "dimensions": item.dimensions, "pass_score": item.pass_score, "organization_id": item.organization_id, "is_public": item.is_public, "is_active": item.is_active, "created_at": item.created_at.isoformat()}
+
+
+def organization_sessions_query(organization_id: int, member_ids: list[int], since: datetime):
+    return select(InterviewSession).where(
+        InterviewSession.user_id.in_(member_ids),
+        InterviewSession.organization_id == organization_id,
+        InterviewSession.status == "completed",
+        InterviewSession.ended_at >= since,
+    )
 
 
 async def audit(db: AsyncSession, organization_id: int, actor_user_id: int, action: str, target_type: str = "", target_id: str = "", detail: dict | None = None) -> None:
@@ -197,9 +211,7 @@ async def organization_dashboard(org_uuid: str, auth: tuple = Depends(get_curren
     member_result = await db.execute(select(OrganizationMember.user_id).where(OrganizationMember.organization_id == org.id, OrganizationMember.status == "active"))
     member_ids = [row[0] for row in member_result.all()]
     since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=90)
-    sessions_result = await db.execute(
-        select(InterviewSession).where(InterviewSession.user_id.in_(member_ids), InterviewSession.status == "completed", InterviewSession.ended_at >= since)
-    ) if member_ids else None
+    sessions_result = await db.execute(organization_sessions_query(org.id, member_ids, since)) if member_ids else None
     sessions = list(sessions_result.scalars().all()) if sessions_result else []
     user_result = await db.execute(select(User).where(User.id.in_(member_ids))) if member_ids else None
     user_map = {item.id: item for item in user_result.scalars().all()} if user_result else {}
@@ -219,7 +231,9 @@ async def organization_dashboard(org_uuid: str, auth: tuple = Depends(get_curren
                 continue
     members = [{"user_uuid": user_map[user_id].uuid, "nickname": user_map[user_id].nickname, "interviews": len(scores), "average_score": round(sum(scores) / len(scores))} for user_id, scores in by_user.items() if user_id in user_map]
     trend = [{"date": day, "interviews": len(scores), "average_score": round(sum(scores) / len(scores), 1)} for day, scores in sorted(trend_map.items())]
-    return {"code": 0, "data": {"organization": serialize_org(org, "admin"), "member_count": len(member_ids), "completed_interviews": len(sessions), "average_score": round(sum(int(item.final_score or 0) for item in sessions) / max(1, len(sessions))), "dimensions": [{"name": name, "average": round(sum(scores) / len(scores), 1)} for name, scores in dimensions.items()], "trend": trend, "members": sorted(members, key=lambda item: item["average_score"], reverse=True)}}
+    rubric_sessions = [item for item in sessions if isinstance(item.report_json, dict) and "passed" in item.report_json]
+    passed_count = sum(bool(item.report_json.get("passed")) for item in rubric_sessions)
+    return {"code": 0, "data": {"organization": serialize_org(org, "admin"), "member_count": len(member_ids), "completed_interviews": len(sessions), "average_score": round(sum(int(item.final_score or 0) for item in sessions) / max(1, len(sessions))), "passed_count": passed_count, "pass_rate": round(passed_count / len(rubric_sessions) * 100) if rubric_sessions else None, "dimensions": [{"name": name, "average": round(sum(scores) / len(scores), 1)} for name, scores in dimensions.items()], "trend": trend, "members": sorted(members, key=lambda item: item["average_score"], reverse=True)}}
 
 
 @router.put("/organizations/{org_uuid}/settings")
@@ -290,3 +304,143 @@ async def export_organization_data(org_uuid: str, auth: tuple = Depends(get_curr
     await audit(db, org.id, user.id, "organization.exported", "organization", org.uuid)
     await db.commit()
     return {"code": 0, "data": {"exported_at": datetime.now(timezone.utc).isoformat(), "organization": serialize_org(org, "admin"), "dashboard": dashboard_response["data"], "members": members_response["data"], "questions": questions_response["data"]}}
+
+
+@router.put("/rubrics/{rubric_uuid}")
+async def update_rubric(rubric_uuid: str, req: RubricRequest, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    result = await db.execute(select(ScoringRubric).where(ScoringRubric.uuid == rubric_uuid, ScoringRubric.is_active.is_(True)))
+    rubric = result.scalar_one_or_none()
+    if not rubric:
+        raise HTTPException(status_code=404, detail={"code": 40452, "message": "评分标准不存在"})
+    org = None
+    if rubric.organization_id:
+        org_result = await db.execute(select(Organization).where(Organization.id == rubric.organization_id))
+        org = org_result.scalar_one_or_none()
+        if not org:
+            raise HTTPException(status_code=404, detail={"code": 40450, "message": "组织不存在"})
+        await membership(db, user.id, org.uuid, {"owner", "admin", "coach"})
+    elif rubric.created_by != user.id:
+        raise HTTPException(status_code=403, detail={"code": 40352, "message": "不能修改该评分标准"})
+    dimensions = []
+    total_weight = 0.0
+    for item in req.dimensions[:12]:
+        if not isinstance(item, dict) or not item.get("name"):
+            continue
+        weight = max(0.0, float(item.get("weight", 0)))
+        total_weight += weight
+        dimensions.append({"name": str(item["name"])[:64], "weight": weight, "description": str(item.get("description") or "")[:500]})
+    if not dimensions or total_weight <= 0:
+        raise HTTPException(status_code=422, detail={"code": 42251, "message": "评分维度不能为空且权重必须大于 0"})
+    for item in dimensions:
+        item["weight"] = round(item["weight"] / total_weight, 4)
+    rubric.name = req.name
+    rubric.description = req.description
+    rubric.dimensions = dimensions
+    rubric.pass_score = req.pass_score
+    rubric.is_public = req.is_public
+    if org:
+        await audit(db, org.id, user.id, "rubric.updated", "rubric", rubric.uuid, {"name": rubric.name})
+    await db.commit()
+    await db.refresh(rubric)
+    return {"code": 0, "data": serialize_rubric(rubric)}
+
+
+@router.delete("/rubrics/{rubric_uuid}")
+async def delete_rubric(rubric_uuid: str, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    result = await db.execute(select(ScoringRubric).where(ScoringRubric.uuid == rubric_uuid, ScoringRubric.is_active.is_(True)))
+    rubric = result.scalar_one_or_none()
+    if not rubric:
+        raise HTTPException(status_code=404, detail={"code": 40452, "message": "评分标准不存在"})
+    org = None
+    if rubric.organization_id:
+        org = await db.get(Organization, rubric.organization_id)
+        if not org:
+            raise HTTPException(status_code=404, detail={"code": 40450, "message": "组织不存在"})
+        await membership(db, user.id, org.uuid, {"owner", "admin"})
+    elif rubric.created_by != user.id:
+        raise HTTPException(status_code=403, detail={"code": 40352, "message": "不能删除该评分标准"})
+    rubric.is_active = False
+    if org:
+        await audit(db, org.id, user.id, "rubric.archived", "rubric", rubric.uuid)
+    await db.commit()
+    return {"code": 0, "data": {"archived": True}}
+
+
+@router.put("/organizations/{org_uuid}/questions/{question_uuid}")
+async def update_question(org_uuid: str, question_uuid: str, req: QuestionRequest, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    org, _ = await membership(db, user.id, org_uuid, {"owner", "admin", "coach"})
+    result = await db.execute(select(OrganizationQuestion).where(OrganizationQuestion.uuid == question_uuid, OrganizationQuestion.organization_id == org.id, OrganizationQuestion.is_active.is_(True)))
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail={"code": 40453, "message": "组织题目不存在"})
+    item.title = req.title
+    item.question = req.question
+    item.dimension = req.dimension or None
+    item.difficulty = req.difficulty
+    item.scoring_criteria = req.scoring_criteria or None
+    await audit(db, org.id, user.id, "question.updated", "question", item.uuid, {"title": item.title})
+    await db.commit()
+    await db.refresh(item)
+    return {"code": 0, "data": {"uuid": item.uuid, **req.model_dump()}}
+
+
+@router.delete("/organizations/{org_uuid}/questions/{question_uuid}")
+async def delete_question(org_uuid: str, question_uuid: str, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    org, _ = await membership(db, user.id, org_uuid, {"owner", "admin"})
+    result = await db.execute(select(OrganizationQuestion).where(OrganizationQuestion.uuid == question_uuid, OrganizationQuestion.organization_id == org.id, OrganizationQuestion.is_active.is_(True)))
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail={"code": 40453, "message": "组织题目不存在"})
+    item.is_active = False
+    await audit(db, org.id, user.id, "question.archived", "question", item.uuid)
+    await db.commit()
+    return {"code": 0, "data": {"archived": True}}
+
+
+@router.get("/organizations/{org_uuid}/retention/preview")
+async def retention_preview(org_uuid: str, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    org, _ = await membership(db, user.id, org_uuid, {"owner", "admin"})
+    retention_days = int((org.settings or {}).get("retention_days", 365))
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+    result = await db.execute(select(func.count()).select_from(InterviewSession).where(InterviewSession.organization_id == org.id, InterviewSession.ended_at.is_not(None), InterviewSession.ended_at < cutoff))
+    return {"code": 0, "data": {"retention_days": retention_days, "cutoff": cutoff.isoformat(), "sessions_to_delete": int(result.scalar() or 0), "confirmation": org.slug}}
+
+
+@router.post("/organizations/{org_uuid}/retention/run")
+async def run_retention(org_uuid: str, req: RetentionRunRequest, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    org, _ = await membership(db, user.id, org_uuid, {"owner", "admin"})
+    if req.confirm != org.slug:
+        raise HTTPException(status_code=422, detail={"code": 42254, "message": "确认标识不正确"})
+    retention_days = int((org.settings or {}).get("retention_days", 365))
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+    sessions_result = await db.execute(select(InterviewSession.id).where(InterviewSession.organization_id == org.id, InterviewSession.ended_at.is_not(None), InterviewSession.ended_at < cutoff))
+    session_ids = [row[0] for row in sessions_result.all()]
+    if not session_ids:
+        return {"code": 0, "data": {"deleted_sessions": 0, "deleted_media": 0}}
+    videos_result = await db.execute(select(VideoAnalysis).where(VideoAnalysis.session_id.in_(session_ids)))
+    videos = list(videos_result.scalars().all())
+    video_ids = [item.id for item in videos]
+    await db.execute(delete(CoachReview).where(CoachReview.session_id.in_(session_ids)))
+    await db.execute(delete(PracticeAttempt).where(PracticeAttempt.session_id.in_(session_ids)))
+    await db.execute(delete(TechnicalSubmission).where(TechnicalSubmission.session_id.in_(session_ids)))
+    if video_ids:
+        await db.execute(delete(VideoAnalysis).where(VideoAnalysis.id.in_(video_ids)))
+    await db.execute(delete(InterviewRound).where(InterviewRound.session_id.in_(session_ids)))
+    await db.execute(delete(InterviewSession).where(InterviewSession.id.in_(session_ids)))
+    await audit(db, org.id, user.id, "retention.executed", "organization", org.uuid, {"deleted_sessions": len(session_ids), "deleted_media": len(videos), "cutoff": cutoff.isoformat()})
+    await db.commit()
+    deleted_media = 0
+    for item in videos:
+        try:
+            from pathlib import Path as _Path
+            _Path(item.file_path).unlink(missing_ok=True)
+            deleted_media += 1
+        except OSError:
+            continue
+    return {"code": 0, "data": {"deleted_sessions": len(session_ids), "deleted_media": deleted_media, "cutoff": cutoff.isoformat()}}

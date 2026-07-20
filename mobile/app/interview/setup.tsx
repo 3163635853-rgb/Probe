@@ -28,6 +28,8 @@ type Step = "industry" | "position" | "mode" | "difficulty" | "context" | "jd";
 const STEPS: Step[] = ["industry", "position", "mode", "difficulty", "context", "jd"];
 type ResumeOption = { uuid: string; name: string; is_active: boolean };
 type CareerPresets = { stages: { code: string; name: string; focus: string }[]; interviewer_roles: string[] };
+type OrganizationOption = { uuid: string; name: string; role: string };
+type RubricOption = { uuid: string; name: string; pass_score: number };
 
 export default function SetupScreen() {
   const router = useRouter();
@@ -51,6 +53,8 @@ export default function SetupScreen() {
   const { data: difficulties } = useFetch<Difficulty[]>("/config/difficulties");
   const { data: resumes } = useFetch<ResumeOption[]>("/career/resumes");
   const { data: careerPresets } = useFetch<CareerPresets>("/career/presets");
+  const { data: organizations } = useFetch<OrganizationOption[]>("/enterprise/organizations");
+  const { data: rubrics } = useFetch<RubricOption[]>(form.organization_uuid ? `/enterprise/rubrics?organization_uuid=${form.organization_uuid}` : "/enterprise/rubrics", [form.organization_uuid]);
 
   const currentIndex = STEPS.indexOf(step);
 
@@ -191,6 +195,10 @@ export default function SetupScreen() {
                 <TextInput value={form.training_focus || ""} onChangeText={(text) => setForm({ ...form, training_focus: text })} placeholder="本次训练重点，如：抗压追问" placeholderTextColor="#a8a29e" className="rounded-xl border border-input bg-white p-4 text-base text-foreground" />
                 <Text className="text-xs font-semibold text-muted-foreground">使用简历</Text>
                 <View className="flex-row flex-wrap gap-2"><TouchableOpacity onPress={() => setForm({ ...form, resume_uuid: undefined })} className={`rounded-full px-3 py-2 ${!form.resume_uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${!form.resume_uuid ? "text-white" : "text-foreground"}`}>不使用</Text></TouchableOpacity>{resumes?.map((item) => <TouchableOpacity key={item.uuid} onPress={() => setForm({ ...form, resume_uuid: item.uuid })} className={`rounded-full px-3 py-2 ${form.resume_uuid === item.uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${form.resume_uuid === item.uuid ? "text-white" : "text-foreground"}`}>{item.name}</Text></TouchableOpacity>)}</View>
+                <Text className="text-xs font-semibold text-muted-foreground">训练归属</Text>
+                <View className="flex-row flex-wrap gap-2"><TouchableOpacity onPress={() => setForm({ ...form, organization_uuid: undefined, rubric_uuid: undefined })} className={`rounded-full px-3 py-2 ${!form.organization_uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${!form.organization_uuid ? "text-white" : "text-foreground"}`}>个人训练</Text></TouchableOpacity>{organizations?.map((item) => <TouchableOpacity key={item.uuid} onPress={() => setForm({ ...form, organization_uuid: item.uuid, rubric_uuid: undefined })} className={`rounded-full px-3 py-2 ${form.organization_uuid === item.uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${form.organization_uuid === item.uuid ? "text-white" : "text-foreground"}`}>{item.name}</Text></TouchableOpacity>)}</View>
+                <Text className="text-xs font-semibold text-muted-foreground">评分标准</Text>
+                <View className="flex-row flex-wrap gap-2"><TouchableOpacity onPress={() => setForm({ ...form, rubric_uuid: undefined })} className={`rounded-full px-3 py-2 ${!form.rubric_uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${!form.rubric_uuid ? "text-white" : "text-foreground"}`}>默认</Text></TouchableOpacity>{rubrics?.map((item) => <TouchableOpacity key={item.uuid} onPress={() => setForm({ ...form, rubric_uuid: item.uuid })} className={`rounded-full px-3 py-2 ${form.rubric_uuid === item.uuid ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${form.rubric_uuid === item.uuid ? "text-white" : "text-foreground"}`}>{item.name} · {item.pass_score}</Text></TouchableOpacity>)}</View>
                 <Text className="text-xs font-semibold text-muted-foreground">面试轮次</Text>
                 <View className="flex-row flex-wrap gap-2">{careerPresets?.stages.map((item) => <TouchableOpacity key={item.code} onPress={() => setForm({ ...form, interview_stage: item.code })} className={`rounded-full px-3 py-2 ${form.interview_stage === item.code ? "bg-primary" : "bg-secondary"}`}><Text className={`text-xs font-semibold ${form.interview_stage === item.code ? "text-white" : "text-foreground"}`}>{item.name}</Text></TouchableOpacity>)}</View>
                 <Text className="text-xs font-semibold text-muted-foreground">面试官角色</Text>

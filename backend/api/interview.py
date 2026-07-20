@@ -64,10 +64,12 @@ async def start_interview(
     user, _ = auth
     await ensure_quota_initialized(user)
 
-    from models.career import ExperienceStory, Resume
+    from models.career import Resume
     from models.organization import Organization, OrganizationMember, ScoringRubric
+    from services.career_evidence import build_candidate_evidence
 
     resume_id = organization_id = rubric_id = None
+    pass_score = None
     resume_context = rubric_context = ""
     if req.resume_uuid:
         resume_result = await db.execute(select(Resume).where(Resume.uuid == req.resume_uuid, Resume.user_id == user.id))
@@ -75,9 +77,7 @@ async def start_interview(
         if not resume:
             raise HTTPException(status_code=404, detail={"code": 40420, "message": "简历不存在"})
         resume_id = resume.id
-        story_result = await db.execute(select(ExperienceStory).where(ExperienceStory.user_id == user.id).limit(8))
-        stories = list(story_result.scalars().all())
-        resume_context = (resume.raw_text[:5000] + "\nSTAR素材：" + "；".join(f"{item.title}:{item.action or ''}->{item.result or ''}" for item in stories))[:7000]
+        resume_context = await build_candidate_evidence(db, user_id=user.id, resume_id=resume.id)
     if req.organization_uuid:
         org_result = await db.execute(
             select(Organization, OrganizationMember).join(OrganizationMember, OrganizationMember.organization_id == Organization.id).where(Organization.uuid == req.organization_uuid, OrganizationMember.user_id == user.id, OrganizationMember.status == "active")
@@ -92,8 +92,9 @@ async def start_interview(
         if not rubric or (not rubric.is_public and rubric.created_by != user.id and rubric.organization_id != organization_id):
             raise HTTPException(status_code=403, detail={"code": 40370, "message": "评分标准不可用"})
         rubric_id = rubric.id
+        pass_score = rubric.pass_score
         import json as _json
-        rubric_context = _json.dumps(rubric.dimensions, ensure_ascii=False)[:4000]
+        rubric_context = _json.dumps({"dimensions": rubric.dimensions, "pass_score": rubric.pass_score, "name": rubric.name}, ensure_ascii=False)[:4000]
 
     # 创建 session UUID 先生成，保证 Lua 脚本写入正确值
     session_uuid = str(uuid_lib.uuid4())
@@ -154,6 +155,9 @@ async def start_interview(
         interviewer_role=req.interviewer_role or "",
         training_focus=req.training_focus or "",
         rubric_context=rubric_context,
+        organization_id=organization_id,
+        rubric_id=rubric_id,
+        pass_score=pass_score,
     )
     await save_context(session_uuid, ctx)
 
@@ -264,6 +268,17 @@ async def get_report(
         pos = await db.get(Position, session.position_id)
         position_name = pos.name if pos else ""
 
+    from models.career import VideoAnalysis
+    video_result = await db.execute(
+        select(VideoAnalysis)
+        .where(VideoAnalysis.session_id == session.id, VideoAnalysis.status == "completed")
+        .order_by(desc(VideoAnalysis.created_at))
+        .limit(1)
+    )
+    video_analysis = video_result.scalar_one_or_none()
+    content_score = int((session.report_json or {}).get("overall_score", session.final_score or 0))
+    expression_score = int(video_analysis.overall_score) if video_analysis and video_analysis.overall_score is not None else None
+
     report = {**(session.report_json or {})}
     report.update({
         "session_uuid": session.uuid,
@@ -286,6 +301,17 @@ async def get_report(
             }
             for r in rounds
         ],
+        "content_score": content_score,
+        "expression_score": expression_score,
+        "combined_score": round(content_score * 0.75 + expression_score * 0.25) if expression_score is not None else content_score,
+        "expression_analysis": ({
+            "uuid": video_analysis.uuid,
+            "duration_sec": video_analysis.duration_sec,
+            "delivery_metrics": video_analysis.delivery_metrics or {},
+            "visual_metrics": video_analysis.visual_metrics or {},
+            "overall_score": video_analysis.overall_score,
+            "media_url": f"/api/video/{video_analysis.uuid}/media",
+        } if video_analysis else None),
         "share_image_url": None,
         "created_at": session.started_at.isoformat() if session.started_at else None,
     })

@@ -44,10 +44,10 @@ Final Round AI 的体验 × 中文市场 × 非技术岗 × 微信生态裂变
 
 ```
 代码量:    18,000+ 行 (Python + TypeScript)
-后端:      90+ 个源文件, 134 个 API 方法/健康端点, 23 个路由模块
+后端:      90+ 个源文件, 152 个 API 方法/健康端点, 23 个路由模块
 Web 前端:  17 个页面, 20+ 个组件
 App:       18 个页面, 7 个组件
-数据库:    32 张 MySQL 表 + Redis 缓存 + 可选 FAISS 向量索引
+数据库:    33 张 MySQL 表 + Redis 缓存 + 可选 FAISS 向量索引
 文档:      完整架构设计 + API 规范 + 任务清单
 ```
 
@@ -89,8 +89,8 @@ App:       18 个页面, 7 个组件
 Probe/
 ├── backend/              # Python FastAPI 后端
 │   ├── agent/            # 智能体核心 (planner/prober/evaluator/reporter)
-│   ├── api/              # 23 个路由模块, 134 个 API 方法/健康端点
-│   ├── models/           # SQLAlchemy ORM (32 表)
+│   ├── api/              # 23 个路由模块, 152 个 API 方法/健康端点
+│   ├── models/           # SQLAlchemy ORM (33 表)
 │   ├── services/         # LLM / 语音 / 推送
 │   ├── knowledge/        # FAISS 向量检索 + embedding
 │   ├── memory/           # Redis 工作记忆
@@ -177,11 +177,11 @@ npx expo start
 - SSE 断线自动重连 + iOS 后台恢复
 - 配额原子扣减 (Redis Lua 脚本)
 - DB 提交失败补偿回滚
-- CI: 后端测试与迁移 + Web lint/build + Mobile typecheck/lint + Compose 校验
+- CI: 后端测试与迁移 + 后端生产镜像/FFmpeg/OCR 工具验证 + Web lint/build + Mobile typecheck/lint + Compose 校验
 - CD: 迁移优先、健康检查等待、失败日志与自动停止
 - 微信支付 API v3: JSAPI/H5 下单、RSA 验签、AES-GCM 回调解密、幂等履约
 - 分享图片: 服务端生成、持久化、渠道记录与点击统计
-- 自动化测试: 33 项后端测试，覆盖支付、分享、成长、长期画像、通知、知识库兜底和路由契约
+- 自动化测试: 37 项后端测试，覆盖支付、分享、成长、长期画像、通知、知识库兜底和路由契约
 
 ## 独立开发
 

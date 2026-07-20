@@ -1,4 +1,5 @@
 import uuid as uuid_lib
+from datetime import timedelta
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,11 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from agent.evaluator import evaluate
 from api.deps import get_current_user
 from db.mysql import get_db
-from models.career import ExperienceStory, PracticeAttempt
+from models.career import DrillAttempt, ExperienceStory, PracticeAttempt
 from models.interview import InterviewRound, InterviewSession
 from models.knowledge import KnowledgeQuestion
 from services.llm import CHAT_PARAMS, chat
 from services.practice import compare_answers, optimize_answer
+from services.career_evidence import build_candidate_evidence
 
 router = APIRouter(prefix="/api/practice", tags=["practice"])
 
@@ -46,6 +48,16 @@ class DrillGenerateRequest(BaseModel):
     company_name: str = ""
     difficulty: int = Field(3, ge=1, le=5)
     focus: str = ""
+
+
+class DrillAttemptRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=3000)
+    answer: str = Field(min_length=1, max_length=10000)
+    difficulty: int = Field(3, ge=1, le=5)
+    duration_sec: int | None = Field(None, ge=0, le=3600)
+    position: str = Field("", max_length=128)
+    company_name: str = Field("", max_length=128)
+    focus: str = Field("", max_length=128)
 
 
 async def owned_round(db: AsyncSession, user_id: int, round_id: int) -> tuple[InterviewRound, InterviewSession]:
@@ -113,7 +125,8 @@ async def retry_round(
         if knowledge:
             reference_answer = knowledge.reference_answer or ""
             scoring_criteria = knowledge.scoring_criteria or ""
-    result = await evaluate(round_item.question, req.answer, session.difficulty, reference_answer, scoring_criteria)
+    candidate_evidence = await build_candidate_evidence(db, user_id=user.id, resume_id=session.resume_id)
+    result = await evaluate(round_item.question, req.answer, session.difficulty, reference_answer, scoring_criteria, candidate_evidence)
     count_result = await db.execute(
         select(func.count()).select_from(PracticeAttempt).where(PracticeAttempt.user_id == user.id, PracticeAttempt.round_id == round_id)
     )
@@ -150,3 +163,52 @@ async def optimize_standalone(req: OptimizeRequest, auth: tuple = Depends(get_cu
     stories = await user_stories(db, user.id)
     optimized = await optimize_answer(req.question, req.answer, req.evaluation, stories)
     return {"code": 0, "data": optimized}
+
+
+@router.post("/drills/{drill_code}/attempts")
+async def submit_drill_attempt(drill_code: str, req: DrillAttemptRequest, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    drill = next((item for item in DRILLS if item["code"] == drill_code), None)
+    if not drill:
+        raise HTTPException(status_code=404, detail={"code": 40431, "message": "专项训练不存在"})
+    candidate_evidence = await build_candidate_evidence(db, user_id=user.id)
+    scoring = f"专项训练维度：{req.focus or drill['dimension']}。重点检查回答是否直接、结构完整、事实可信且有结果。"
+    evaluation = await evaluate(req.question, req.answer, req.difficulty, scoring_criteria=scoring, candidate_evidence=candidate_evidence)
+    stories = await user_stories(db, user.id)
+    optimized = await optimize_answer(req.question, req.answer, evaluation, stories)
+    previous_result = await db.execute(
+        select(DrillAttempt).where(DrillAttempt.user_id == user.id, DrillAttempt.drill_code == drill_code).order_by(DrillAttempt.created_at.desc()).limit(1)
+    )
+    previous = previous_result.scalar_one_or_none()
+    comparison = compare_answers(previous.answer if previous else "", req.answer, previous.score if previous else 0, int(evaluation.get("score", 0)), evaluation)
+
+    from api.growth import complete_growth_task, ensure_daily_tasks, get_or_create_profile, local_today
+    today = local_today()
+    profile = await get_or_create_profile(db, user.id)
+    tasks = await ensure_daily_tasks(db, user_id=user.id, today=today, focus_dimension=req.focus or drill["dimension"])
+    xp_awarded = 0
+    focus_task = next((task for task in tasks if task.task_type == "focus"), None)
+    if focus_task and complete_growth_task(profile, focus_task, today):
+        xp_awarded = focus_task.xp_reward
+
+    item = DrillAttempt(
+        uuid=str(uuid_lib.uuid4()), user_id=user.id, drill_code=drill_code,
+        question=req.question, answer=req.answer, score=int(evaluation.get("score", 0)),
+        duration_sec=req.duration_sec, position=req.position or None, company_name=req.company_name or None,
+        focus=req.focus or drill["dimension"], evaluation=evaluation, optimized_answers=optimized,
+        comparison=comparison, xp_awarded=xp_awarded,
+    )
+    db.add(item)
+    await db.commit()
+    await db.refresh(item)
+    return {"code": 0, "data": {"uuid": item.uuid, "drill_code": drill_code, "score": item.score, "evaluation": evaluation, "optimized_answers": optimized, "comparison": comparison, "xp_awarded": xp_awarded, "created_at": item.created_at.isoformat()}}
+
+
+@router.get("/drills/attempts")
+async def list_drill_attempts(drill_code: str = "", limit: int = 50, auth: tuple = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    user, _ = auth
+    conditions = [DrillAttempt.user_id == user.id]
+    if drill_code:
+        conditions.append(DrillAttempt.drill_code == drill_code)
+    result = await db.execute(select(DrillAttempt).where(*conditions).order_by(DrillAttempt.created_at.desc()).limit(max(1, min(100, limit))))
+    return {"code": 0, "data": [{"uuid": item.uuid, "drill_code": item.drill_code, "question": item.question, "answer": item.answer, "score": item.score, "duration_sec": item.duration_sec, "focus": item.focus, "evaluation": item.evaluation or {}, "optimized_answers": item.optimized_answers or {}, "comparison": item.comparison or {}, "xp_awarded": item.xp_awarded, "created_at": item.created_at.isoformat()} for item in result.scalars().all()]}

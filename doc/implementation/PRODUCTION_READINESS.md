@@ -1,10 +1,10 @@
 # 生产上线检查清单
 
-> 最后更新：2026-07-16
+> 最后更新：2026-07-20
 
 ## 已完成
 
-- [x] 后端 Python 全量编译和 29 项 pytest 自动化测试
+- [x] 后端 Python 全量编译和 37 项 pytest 自动化测试
 - [x] Web ESLint 零错误零警告、Next.js 生产构建
 - [x] Mobile TypeScript、Expo ESLint、Expo Doctor 与 `/api` Base URL 链路
 - [x] 微信支付 API v3 JSAPI/H5 下单、请求签名、响应/回调验签、AES-GCM 解密、幂等履约
@@ -13,9 +13,9 @@
 - [x] 服务端分享图、持久化文件、分享记录和点击统计
 - [x] 头像完整 URL、公开缓存读取和上传文件持久卷
 - [x] SSE ticket、Bearer Header 和旧 query token 三层认证回退
-- [x] App 1.1.0 成长中心全栈模块与 29 项后端测试
-- [x] Alembic 新迁移与 21 张 ORM 表对齐（含邀请双方奖励履约字段）
-- [x] CI 覆盖 backend tests/migrations、Web lint/build、Mobile check、Compose config
+- [x] App 1.1.0 成长中心全栈模块与 37 项后端测试
+- [x] Alembic 新迁移与 33 张 ORM 表对齐（含邀请双方奖励履约字段）
+- [x] CI 覆盖 backend tests/migrations、后端生产镜像与 FFmpeg/Tesseract/Antiword、Web lint/build、Mobile check、Compose config
 - [x] CD 在启动应用前执行迁移，并在健康失败时输出日志和终止
 - [x] Docker Compose 去除废弃 version 字段，分享图片使用独立持久卷
 

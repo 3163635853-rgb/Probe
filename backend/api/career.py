@@ -135,7 +135,7 @@ async def upload_resume(
     user, _ = auth
     extension = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
     if extension not in SUPPORTED_RESUME_TYPES:
-        raise HTTPException(status_code=400, detail={"code": 40020, "message": "仅支持 PDF、DOCX、TXT 和 Markdown 简历"})
+        raise HTTPException(status_code=400, detail={"code": 40020, "message": "仅支持 PDF、DOC、DOCX、TXT 和 Markdown 简历"})
     content = await file.read()
     if not content or len(content) > MAX_RESUME_SIZE:
         raise HTTPException(status_code=400, detail={"code": 40021, "message": "简历文件不能为空且不能超过 10MB"})

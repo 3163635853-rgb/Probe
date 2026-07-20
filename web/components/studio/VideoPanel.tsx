@@ -9,9 +9,10 @@ import { useToast } from "@/components/Toast";
 
 type Analysis = {
   uuid: string;
+  session_uuid?: string;
   duration_sec?: number;
   transcript?: string;
-  delivery_metrics: { score?: number; words_per_minute?: number; filler_count?: number; filler_rate?: number; pause_estimate?: number; long_sentence_count?: number; repetition_count?: number };
+  delivery_metrics: { score?: number; words_per_minute?: number; filler_count?: number; filler_rate?: number; pause_estimate?: number; long_sentence_count?: number; repetition_count?: number; audio_metrics_available?: boolean; audio_pause_count?: number; opening_silence_sec?: number; volume_stability?: number };
   visual_metrics: { available?: boolean; face_presence_ratio?: number; eye_visibility_ratio?: number; centered_face_ratio?: number; visual_score?: number; note?: string };
   overall_score?: number;
   media_url: string;
@@ -26,6 +27,7 @@ export function VideoPanel() {
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: analyses, refetch } = useFetch<Analysis[]>("/video/analyses");
+  const { data: history } = useFetch<{ items: Array<{ session_uuid: string; position: string; final_score: number | null; status: string; started_at: string }> }>("/interview/history?page=1&page_size=50");
   const [cameraReady, setCameraReady] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -33,6 +35,7 @@ export function VideoPanel() {
   const [transcript, setTranscript] = useState("");
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<Analysis | null>(null);
+  const [sessionUuid, setSessionUuid] = useState("");
 
   useEffect(() => () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -91,6 +94,7 @@ export function VideoPanel() {
     const data = new FormData();
     data.append("file", file, name);
     data.append("transcript", transcript);
+    data.append("session_uuid", sessionUuid);
     setUploading(true);
     try {
       const result = await fetchAPI<Analysis>("/video/analyze", { method: "POST", body: data });
@@ -129,6 +133,7 @@ export function VideoPanel() {
             <input ref={fileInputRef} type="file" accept="video/*,audio/*" className="hidden" onChange={(event) => analyzeFile(event.target.files?.[0], event.target.files?.[0]?.name)} />
             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-secondary"><VideoIcon className="h-4 w-4" />上传已有录像</button>
           </div>
+          <label className="mt-4 block"><span className="mb-1 block text-xs font-semibold text-muted-foreground">关联面试报告（供合并评分或提交教练）</span><select value={sessionUuid} onChange={(event) => setSessionUuid(event.target.value)} className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm"><option value="">不关联</option>{history?.items.filter((item) => item.status === "completed").map((item) => <option key={item.session_uuid} value={item.session_uuid}>{item.position || "通用岗位"} · {item.final_score ?? 0} 分 · {new Date(item.started_at).toLocaleDateString("zh-CN")}</option>)}</select></label>
           <label className="mt-4 block"><span className="mb-1 block text-xs font-semibold text-muted-foreground">可选：粘贴转写文本（留空时调用语音识别）</span><textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={4} placeholder="嗯，我当时主要负责…" className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm" /></label>
         </div>
 
@@ -152,6 +157,9 @@ export function VideoPanel() {
                 <Metric label="填充词" value={`${selected.delivery_metrics.filler_count ?? 0} 次`} />
                 <Metric label="重复表达" value={`${selected.delivery_metrics.repetition_count ?? 0} 处`} />
                 <Metric label="长句" value={`${selected.delivery_metrics.long_sentence_count ?? 0} 句`} />
+                <Metric label="真实停顿" value={selected.delivery_metrics.audio_metrics_available ? `${selected.delivery_metrics.audio_pause_count ?? 0} 次` : "未提取"} />
+                <Metric label="开场沉默" value={selected.delivery_metrics.audio_metrics_available ? `${selected.delivery_metrics.opening_silence_sec ?? 0} 秒` : "未提取"} />
+                <Metric label="音量稳定" value={selected.delivery_metrics.audio_metrics_available ? `${selected.delivery_metrics.volume_stability ?? 0}/100` : "未提取"} />
                 <Metric label="面部出现" value={selected.visual_metrics.available ? `${Math.round((selected.visual_metrics.face_presence_ratio ?? 0) * 100)}%` : "未分析"} />
                 <Metric label="眼部可见" value={selected.visual_metrics.available ? `${Math.round((selected.visual_metrics.eye_visibility_ratio ?? 0) * 100)}%` : "未分析"} />
               </div>

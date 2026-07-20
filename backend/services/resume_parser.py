@@ -3,13 +3,16 @@ from __future__ import annotations
 
 import io
 import re
+import shutil
+import subprocess
+import tempfile
 from collections import Counter
 from pathlib import Path
 
 from docx import Document
 from pypdf import PdfReader
 
-SUPPORTED_RESUME_TYPES = {"pdf", "docx", "txt", "md"}
+SUPPORTED_RESUME_TYPES = {"pdf", "doc", "docx", "txt", "md"}
 SKILL_KEYWORDS = [
     "Python", "Java", "JavaScript", "TypeScript", "React", "Vue", "Next.js", "FastAPI",
     "Spring", "MySQL", "PostgreSQL", "Redis", "Kafka", "Docker", "Kubernetes", "AWS",
@@ -23,7 +26,43 @@ def extract_resume_text(content: bytes, extension: str) -> str:
     extension = extension.lower().lstrip(".")
     if extension == "pdf":
         reader = PdfReader(io.BytesIO(content))
-        return "\n".join((page.extract_text() or "") for page in reader.pages)
+        extracted = "\n".join((page.extract_text() or "") for page in reader.pages)
+        if len(re.sub(r"\s+", "", extracted)) >= 30:
+            return extracted
+        # Scanned PDFs: render a bounded number of pages and OCR with Tesseract.
+        try:
+            import fitz
+            import pytesseract
+            from PIL import Image
+
+            document = fitz.open(stream=content, filetype="pdf")
+            ocr_pages = []
+            for page_index in range(min(12, document.page_count)):
+                page = document.load_page(page_index)
+                pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                image = Image.frombytes("RGB", (pixmap.width, pixmap.height), pixmap.samples)
+                ocr_pages.append(pytesseract.image_to_string(image, lang="chi_sim+eng"))
+            ocr_text = "\n".join(ocr_pages).strip()
+            return ocr_text or extracted
+        except Exception:
+            return extracted
+    if extension == "doc":
+        antiword = shutil.which("antiword")
+        if not antiword:
+            raise ValueError("当前环境未安装旧版 Word 解析器")
+        with tempfile.NamedTemporaryFile(suffix=".doc", delete=False) as temp:
+            temp.write(content)
+            temp_path = Path(temp.name)
+        try:
+            result = subprocess.run([antiword, str(temp_path)], check=True, capture_output=True, timeout=30)
+            for encoding in ("utf-8", "gb18030"):
+                try:
+                    return result.stdout.decode(encoding)
+                except UnicodeDecodeError:
+                    continue
+            return result.stdout.decode("utf-8", errors="replace")
+        finally:
+            temp_path.unlink(missing_ok=True)
     if extension == "docx":
         document = Document(io.BytesIO(content))
         paragraphs = [paragraph.text for paragraph in document.paragraphs]

@@ -21,7 +21,8 @@
     {"type": "strength", "quote": "使用了多级缓存", "reason": "给出了具体方案"},
     {"type": "weakness", "quote": "高并发时应该可以", "reason": "缺少量化和验证方法"}
   ],
-  "structure": {"framework": "结论-方案-风险", "complete": true, "missing": []}
+  "structure": {"framework": "结论-方案-风险", "complete": true, "missing": []},
+  "consistency": {"status": "consistent", "matched_story": "会员增长项目", "issues": []}
 }
 ```
 
@@ -40,3 +41,7 @@
 5. 若候选人跳过或回答为空，score=0
 6. evidence 必须引用候选人回答中的短句作为评分证据；若回答为空则为空数组
 7. structure 描述回答框架、完整性和缺失环节
+
+8. 若输入包含候选人证据库，检查回答中的公司、职责、行动和数字是否与证据一致。
+9. consistency.status 只能是 consistent、potential_conflict、unverified、not_checked。证据未覆盖的事实标记 unverified，不得直接断言造假。
+10. matched_story 优先填写最匹配的 STAR 故事标题；发现明显数字或职责冲突时写入 issues。

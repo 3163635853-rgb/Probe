@@ -44,6 +44,7 @@ class InterviewRound(Base, TimestampMixin):
     question: Mapped[str] = mapped_column(Text, nullable=False)
     question_source: Mapped[str] = mapped_column(String(16), default="ai")
     knowledge_question_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    organization_question_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("organization_questions.id"))
     answer: Mapped[Optional[str]] = mapped_column(Text)
     answer_duration_sec: Mapped[Optional[int]] = mapped_column(Integer)
     skipped: Mapped[bool] = mapped_column(Boolean, default=False)

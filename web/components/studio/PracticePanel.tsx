@@ -8,10 +8,13 @@ import { useToast } from "@/components/Toast";
 
 type Drill = { code: string; name: string; duration_min: number; dimension: string; prompt: string; question?: string };
 type Optimized = { structured: string; concise: string; star: string; outline: string[]; fact_warnings: string[] };
+type AttemptResult = { score: number; optimized_answers: Optimized; comparison: { score_before: number; score_after: number; score_delta: number; added_quantification: number }; xp_awarded: number };
+type AttemptHistory = { uuid: string; drill_code: string; score: number; focus: string; xp_awarded: number; created_at: string };
 
 export function PracticePanel() {
   const toast = useToast();
   const { data: drills, loading } = useFetch<Drill[]>("/practice/drills");
+  const { data: history, refetch: refetchHistory } = useFetch<AttemptHistory[]>("/practice/drills/attempts?limit=12");
   const [selected, setSelected] = useState<Drill | null>(null);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -20,6 +23,7 @@ export function PracticePanel() {
   const [generating, setGenerating] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [result, setResult] = useState<Optimized | null>(null);
+  const [attempt, setAttempt] = useState<AttemptResult | null>(null);
   const answerStats = useMemo(() => ({ chars: answer.trim().length, seconds: Math.max(0, Math.round(answer.trim().length / 4.2)) }), [answer]);
 
   async function chooseDrill(drill: Drill) {
@@ -27,6 +31,7 @@ export function PracticePanel() {
     setQuestion(drill.prompt);
     setAnswer("");
     setResult(null);
+    setAttempt(null);
   }
 
   async function generate() {
@@ -50,12 +55,15 @@ export function PracticePanel() {
     if (!question.trim() || !answer.trim()) return;
     setOptimizing(true);
     try {
-      const data = await fetchAPI<Optimized>("/practice/optimize", {
+      if (!selected) return;
+      const data = await fetchAPI<AttemptResult>(`/practice/drills/${selected.code}/attempts`, {
         method: "POST",
-        body: JSON.stringify({ question, answer, evaluation: { suggestion: `围绕${selected?.dimension || "岗位匹配"}增强结构，并保留全部真实事实` } }),
+        body: JSON.stringify({ question, answer, difficulty: 3, duration_sec: answerStats.seconds, position, company_name: company, focus: selected.dimension }),
       });
-      setResult(data);
-      toast.success("已生成三个不虚构事实的回答版本");
+      setAttempt(data);
+      setResult(data.optimized_answers);
+      toast.success(`专项训练已保存${data.xp_awarded ? ` · +${data.xp_awarded} XP` : ""}`);
+      refetchHistory();
     } catch (error) {
       toast.error(getErrorMessage(error, "答案优化失败"));
     } finally {
@@ -97,6 +105,7 @@ export function PracticePanel() {
             <h2 className="text-lg font-bold">回答版本台</h2>
             {!result ? <div className="mt-4 rounded-xl border border-dashed border-border p-8 text-center text-sm leading-6 text-muted-foreground">完成一次回答后，这里会给出结构版、60 秒版与 STAR 版。所有版本只使用你已经提供的事实。</div> : (
               <div className="mt-4 space-y-4">
+                {attempt && <div className="grid grid-cols-3 gap-2"><div className="rounded-xl bg-secondary p-3 text-center"><p className="text-2xl font-bold">{attempt.score}</p><p className="text-[11px] text-muted-foreground">本次得分</p></div><div className="rounded-xl bg-secondary p-3 text-center"><p className={`text-2xl font-bold ${attempt.comparison.score_delta >= 0 ? "text-success" : "text-destructive"}`}>{attempt.comparison.score_delta >= 0 ? "+" : ""}{attempt.comparison.score_delta}</p><p className="text-[11px] text-muted-foreground">较上次</p></div><div className="rounded-xl bg-secondary p-3 text-center"><p className="text-2xl font-bold text-primary">+{attempt.xp_awarded}</p><p className="text-[11px] text-muted-foreground">XP</p></div></div>}
                 <Version title="结构优化版" text={result.structured} />
                 <Version title="60 秒精简版" text={result.concise} />
                 <Version title="STAR 版" text={result.star} />
@@ -107,6 +116,7 @@ export function PracticePanel() {
           </div>
         </section>
       )}
+      {history?.length ? <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"><h2 className="text-lg font-bold">最近专项训练</h2><div className="mt-3 grid gap-2 sm:grid-cols-2">{history.map((item) => <div key={item.uuid} className="flex items-center justify-between rounded-xl bg-secondary px-3 py-2 text-sm"><span>{drills?.find((drill) => drill.code === item.drill_code)?.name || item.drill_code}<span className="ml-2 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString("zh-CN")}</span></span><strong>{item.score}/10</strong></div>)}</div></section> : null}
     </div>
   );
 }

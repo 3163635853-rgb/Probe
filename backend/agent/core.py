@@ -40,6 +40,9 @@ class AgentContext:
     interviewer_role: str = ""
     training_focus: str = ""
     rubric_context: str = ""
+    organization_id: int | None = None
+    rubric_id: int | None = None
+    pass_score: int | None = None
 
 
 # Redis keys
@@ -82,6 +85,9 @@ async def save_context(session_id: str, ctx: AgentContext):
         "interviewer_role": ctx.interviewer_role,
         "training_focus": ctx.training_focus,
         "rubric_context": ctx.rubric_context,
+        "organization_id": ctx.organization_id,
+        "rubric_id": ctx.rubric_id,
+        "pass_score": ctx.pass_score,
     }
     await redis_client.set(key, json.dumps(data, ensure_ascii=False), ex=SESSION_TTL)
 

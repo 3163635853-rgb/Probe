@@ -117,7 +117,7 @@ export function CareerPanel() {
             <h2 className="mt-1 text-xl font-bold">简历证据入口</h2>
             <p className="mt-1 text-sm text-muted-foreground">支持 PDF、DOCX、TXT、Markdown，自动识别技能和量化成果。</p>
           </div>
-          <input ref={inputRef} type="file" accept=".pdf,.docx,.txt,.md" className="hidden" onChange={(event) => uploadResume(event.target.files?.[0])} />
+          <input ref={inputRef} type="file" accept=".pdf,.doc,.docx,.txt,.md" className="hidden" onChange={(event) => uploadResume(event.target.files?.[0])} />
           <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
             {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
             {uploading ? "解析中" : "上传简历"}

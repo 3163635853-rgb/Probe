@@ -114,6 +114,8 @@ export default function ReportScreen() {
           </MotiView>
         </LinearGradient>
 
+        {(report.expression_score != null || report.rubric) && <View className="mx-6 mb-4 gap-3"><View className="flex-row gap-3"><View className="flex-1 rounded-xl border border-border bg-white p-4 items-center"><Text className="text-2xl font-bold text-foreground">{report.content_score ?? report.overall_score}</Text><Text className="mt-1 text-xs text-muted-foreground">内容能力</Text></View><View className="flex-1 rounded-xl border border-border bg-white p-4 items-center"><Text className="text-2xl font-bold text-primary">{report.expression_score ?? "—"}</Text><Text className="mt-1 text-xs text-muted-foreground">表达表现</Text></View><View className="flex-1 rounded-xl border border-border bg-white p-4 items-center"><Text className="text-2xl font-bold text-success">{report.combined_score ?? report.overall_score}</Text><Text className="mt-1 text-xs text-muted-foreground">综合表现</Text></View></View>{report.rubric && <View className={`rounded-xl p-3 ${report.passed ? "bg-emerald-50" : "bg-amber-50"}`}><Text className={`text-center text-sm font-semibold ${report.passed ? "text-success" : "text-primary"}`}>{report.rubric.name} · {report.passed ? "已通过" : "未通过"}（合格线 {report.rubric.pass_score}）</Text></View>}</View>}
+
         {/* Radar Chart */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
@@ -209,6 +211,7 @@ export default function ReportScreen() {
                   {r.answer}
                 </Text>
                 {r.evaluation?.evidence?.length ? <View className="mt-3 gap-2">{r.evaluation.evidence.map((item, index) => <View key={index} className={`rounded-lg p-2 ${item.type === "strength" ? "bg-emerald-50" : "bg-red-50"}`}><Text className={`text-xs font-semibold ${item.type === "strength" ? "text-success" : "text-destructive"}`}>“{item.quote}”</Text><Text className="mt-1 text-xs text-muted-foreground">{item.reason}</Text></View>)}</View> : null}
+                {r.evaluation?.consistency && r.evaluation.consistency.status !== "not_checked" ? <View className={`mt-2 rounded-lg p-2 ${r.evaluation.consistency.status === "potential_conflict" ? "bg-red-50" : r.evaluation.consistency.status === "unverified" ? "bg-amber-50" : "bg-emerald-50"}`}><Text className={`text-xs font-semibold ${r.evaluation.consistency.status === "potential_conflict" ? "text-destructive" : r.evaluation.consistency.status === "unverified" ? "text-primary" : "text-success"}`}>证据一致性：{r.evaluation.consistency.status === "consistent" ? "一致" : r.evaluation.consistency.status === "potential_conflict" ? "潜在冲突" : "待核实"}</Text>{r.evaluation.consistency.issues.length ? <Text className="mt-1 text-xs text-muted-foreground">{r.evaluation.consistency.issues.join("；")}</Text> : null}</View> : null}
                 <RetryCard round={r} />
               </View>
             </MotiView>
